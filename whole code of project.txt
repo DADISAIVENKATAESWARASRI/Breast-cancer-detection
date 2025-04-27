@@ -1,0 +1,2592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breast Cancer Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+</head>
+<body>
+    <div class="container">
+        <!-- Right Upload Section -->
+        <div class="right-section">
+            <form id="imageUploadForm" action="/predict" method="POST" enctype="multipart/form-data">
+                <h2><i class="fas fa-file-upload"></i> Upload Images for Breast Cancer Prediction</h2>
+                
+                <p class="instructions">Please upload images for one or more of the following modalities:</p>
+
+                <div class="image-inputs">
+                    <div class="image-box" id="ultrasoundBox">
+                        <label><i class="fas fa-wave-square"></i> Ultrasound</label>
+                        <input type="file" name="ultrasound" accept="image/*" onchange="uploadNotification('ultrasound')">
+                        <div id="ultrasoundNotification" class="notification"></div>
+                        <button type="button" class="cancelBtn" onclick="cancelUpload('ultrasound')">Cancel</button>
+                    </div>
+
+                    <div class="image-box" id="mammographyBox">
+                        <label><i class="fas fa-x-ray"></i> Mammography</label>
+                        <input type="file" name="mammography" accept="image/*" onchange="uploadNotification('mammography')">
+                        <div id="mammographyNotification" class="notification"></div>
+                        <button type="button" class="cancelBtn" onclick="cancelUpload('mammography')">Cancel</button>
+                    </div>
+
+                    <div class="image-box" id="histopathologyBox">
+                        <label><i class="fas fa-vials"></i> Histopathology</label>
+                        <input type="file" name="histopathology" accept="image/*" onchange="uploadNotification('histopathology')">
+                        <div id="histopathologyNotification" class="notification"></div>
+                        <button type="button" class="cancelBtn" onclick="cancelUpload('histopathology')">Cancel</button>
+                    </div>
+
+                    <div class="image-box" id="mriBox">
+                        <label><i class="fas fa-magnet"></i> MRI</label>
+                        <input type="file" name="mri" accept="image/*" onchange="uploadNotification('mri')">
+                        <div id="mriNotification" class="notification"></div>
+                        <button type="button" class="cancelBtn" onclick="cancelUpload('mri')">Cancel</button>
+                    </div>
+                </div>
+
+                <button type="submit"><i class="fas fa-search"></i> Predict</button>
+            </form>
+
+            <div id="loader" class="loader" style="display: none;"></div>
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+styles.css
+body {
+    background-color: #f7fafc;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+}
+
+.right-section {
+    width: 60%;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+h2 {
+    color: #1e40af;
+    font-size: 28px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.instructions {
+    color: #374151;
+    font-size: 16px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.image-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 90%;
+    margin-bottom: 30px;
+}
+
+.image-box {
+    background-color: #eff6ff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px dashed #5a91c5;
+    text-align: center;
+    position: relative;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.image-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+label {
+    font-weight: 600;
+    color: #1e3a8a;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+input[type="file"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button {
+    padding: 12px 30px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, transform 0.2s;
+    margin-top: 20px;
+}
+
+button:hover {
+    background-color: #f87171;
+    transform: scale(1.05);
+}
+
+.cancelBtn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.cancelBtn:hover {
+    background-color: #dc2626;
+}
+
+.notification {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #374151;
+}
+
+#result {
+    margin-top: 25px;
+    font-weight: bold;
+    color: #1e40af;
+    text-align: center;
+}
+
+.loader {
+    border: 6px solid #5a91c5;
+    border-top: 6px solid #5498f2;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-top: 20px;
+    margin: 20px auto;
+    display: block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+        }
+
+        .container {
+            max-width: fit-content; /* Increased from 1000 */
+            margin: auto;
+            padding: 30px 20px;
+        }
+
+        .right-section {
+            text-align: center;
+            max-width: auto;
+            display: flex;
+            flex-wrap: nowrap;
+
+        }
+
+       
+        .grid-container {
+            display: flex;
+            flex-wrap: nowrap; /* Prevent wrapping */
+            /* overflow-x: auto;   Enable horizontal scroll */
+            gap: 20px;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            justify-content: center;
+}
+
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* .result-card {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        } */
+        .result-card {
+             border: 1px solid #ccc;
+             border-radius: 10px;
+             padding: 20px;
+             background-color: #f9f9f9;
+             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+             width: 220px;
+             min-height: 400px; /* Ensures equal height */
+             flex-shrink: 0; /* Prevents shrinking in horizontal scroll */
+             display: flex;
+             flex-direction: column;
+             justify-content: space-between;
+}
+
+
+        .uploaded-image {
+            width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #fff;
+        }
+
+        .benign {
+            color: green;
+            font-weight: bold;
+        }
+
+        .malignant {
+            color: red;
+            font-weight: bold;
+        }
+
+        .final-prediction {
+            margin-top: 50px;
+            padding: 25px;
+            background-color: #eef6ff;
+            border: 1px solid #d0e2ff;
+            border-radius: 10px;
+        }
+
+        .final-prediction h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+
+        .final-prediction p {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 35px;
+            padding: 10px 25px;
+            background-color: #1e40af;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background-color: #3b82f6;
+        }
+        #pdfContent {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <div class="right-section">
+            <div id="pdfContent">
+                <h2 style="margin-bottom: 10px;">Prediction Results</h2>
+    
+                <div style="margin-top: 30px; margin-bottom: 10px;">
+                    <h3 style="color: #1e40af; margin: 0;">Uploaded Images</h3>
+                </div>
+    
+                <div class="grid-container">
+                    {% for modality in ['ultrasound', 'mammography', 'histopathology', 'mri'] %}
+                        {% if result.get(modality) %}
+                        <div class="result-card">
+                            <h3>{{ modality.capitalize() }}</h3>
+                            <img src="{{ url_for('static', filename='uploads/' + result[modality]['filename']) }}" alt="Uploaded {{ modality }}" class="uploaded-image">
+                            <p>Prediction:
+                                <span class="{% if result[modality]['result'] == 'Benign' %}benign{% else %}malignant{% endif %}">
+                                    {{ result[modality]['result'] }}
+                                </span>
+                            </p>
+                            <p>Confidence: {{ result[modality]['confidence'] }}%</p>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+    
+                {% if result.get('final_result') %}
+                <div class="final-prediction">
+                    <h3>Final Prediction</h3>
+                    <p class="{{ result['final_result'] | lower }}">{{ result['final_result'] }}</p>
+                    <p>Confidence: {{ result['final_confidence'] }}%</p>
+                    {% if result['final_result'] == 'Malignant' %}
+                    <p style="color: red;">A malignant tumor is cancerous and may spread to other parts of the body.</p>
+                    {% elif result['final_result'] == 'Benign' %}
+                    <p style="color: green;">A benign tumor is non-cancerous and typically not life-threatening.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+    
+                <!-- Date & Time placeholder -->
+                <p id="pdf-datetime" style="margin-top: 40px; font-size: 14px; color: gray;"></p>
+    
+            </div> <!-- Moved pdfContent closing tag here -->
+    
+            <button onclick="downloadPDF()" class="back-btn" style="margin-left: 15px;">Download as PDF</button>
+            <a href="/" class="back-btn">Back to Upload</a>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        function downloadPDF() {
+            // Create the date-time element
+            const now = new Date();
+            const formatted = now.toLocaleString('en-IN', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+    
+            const datePara = document.createElement('p');
+            datePara.textContent = "Report generated on: " + formatted;
+            datePara.style.fontSize = '14px';
+            datePara.style.color = 'gray';
+            datePara.style.marginBottom = '15px';
+    
+            const pdfBlock = document.getElementById('pdfContent');
+            pdfBlock.insertBefore(datePara, pdfBlock.firstChild); // Add date at top
+    
+            // Hide buttons
+            const buttons = document.querySelectorAll('.back-btn');
+            buttons.forEach(btn => btn.style.display = 'none');
+    
+            const opt = {
+                margin: [0.2, 0.2, 0.2, 0.2], // Top, left, bottom, right
+                filename: 'prediction_results.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    scrollY: 0, // Prevent capturing scroll offset
+                    scrollX: 0
+                },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } // Use A4 for better layout
+            };
+    
+            // Add slight delay and then generate PDF
+            setTimeout(() => {
+                html2pdf().set(opt).from(pdfBlock).save().then(() => {
+                    // Clean up
+                    pdfBlock.removeChild(datePara);
+                    buttons.forEach(btn => btn.style.display = 'inline-block');
+                });
+            }, 300);
+        }
+    </script>
+    
+
+    
+    
+
+    
+
+</body>
+</html>
+
+function uploadNotification(modality) {
+    const input = document.querySelector(`input[name="${modality}"]`);
+    const notification = document.getElementById(`${modality}Notification`);
+
+    if (input.files.length > 0) {
+        const fileName = input.files[0].name;
+        notification.textContent = `${modality.charAt(0).toUpperCase() + modality.slice(1)} image uploaded successfully: ${fileName}`;
+        notification.style.color = 'green';
+    } else {
+        notification.textContent = '';
+    }
+}
+function cancelUpload(modality) {
+    const input = document.querySelector(`input[name="${modality}"]`);
+    const notification = document.getElementById(`${modality}Notification`);
+    
+    input.value = ''; // Clear the file input
+    notification.textContent = `${modality.charAt(0).toUpperCase() + modality.slice(1)} upload canceled.`;
+    notification.style.color = 'red';
+}
+
+import os
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from PIL import Image
+from flask import Flask, render_template, request
+
+# Custom layer registration (if needed by any model)
+class Cast(tf.keras.layers.Layer):
+    def call(self, inputs):
+        return tf.cast(inputs, tf.float32)
+
+tf.keras.utils.get_custom_objects().update({'Cast': Cast})
+
+# Flask app setup
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
+# Load pre-trained models
+ultrasound_model = tf.keras.models.load_model('models/ultrasound_breast_cancer_Model.h5', compile=False)
+mri_model = tf.keras.models.load_model('models/MRI_breast_cancer_model.h5', compile=False)
+histopathology_model = tf.keras.models.load_model('models/histopathology_breast_cancer_model.h5', compile=False)
+mammography_model = tf.keras.models.load_model('models/Improved_Mammography_breast_cancer_model.h5', compile=False)
+
+# Define model accuracies for weighted voting
+accuracies = np.array([0.9397, 0.9687, 0.8698, 0.7520])  
+weights = accuracies / np.sum(accuracies)  # Normalize weights
+
+# Image preprocessing
+def prepare_image(image_path):
+    image = Image.open(image_path).convert("RGB")
+    image = image.resize((224, 224))
+    image = np.array(image) / 255.0
+    image = np.expand_dims(image, axis=0)
+    return image
+
+# Predict function
+def predict(model, image_path):
+    img = prepare_image(image_path)
+    prediction = model.predict(img)
+    return prediction  # Softmax output [benign_prob, malignant_prob]
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/predict', methods=['POST'])
+def predict_route():
+    files = request.files
+    results = {}
+    malignant_probs = []
+    used_weights = []
+
+    model_mapping = {
+        'ultrasound': ultrasound_model,
+        'mammography': mammography_model,
+        'histopathology': histopathology_model,
+        'mri': mri_model
+    }
+
+    for i, (key, model) in enumerate(model_mapping.items()):
+        if key in files and files[key].filename != '':
+            file = files[key]
+            filename = f"{key}_{file.filename}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+
+            try:
+                prediction = predict(model, file_path)
+
+                # Softmax output: [benign_prob, malignant_prob]
+                malignant_prob = float(prediction[0][1])
+                predicted_class = 'Malignant' if malignant_prob > 0.5 else 'Benign'
+                confidence = malignant_prob if predicted_class == 'Malignant' else 1 - malignant_prob
+
+                results[key] = {
+                    'result': predicted_class,
+                    'confidence': round(confidence * 100, 2),
+                    'filename': filename
+                }
+
+                malignant_probs.append(malignant_prob)
+                used_weights.append(weights[i])
+
+            except Exception as e:
+                results[key] = {'result': 'Error', 'confidence': 0.0, 'filename': filename}
+
+    # Final decision using weighted ensemble
+    if not malignant_probs:
+        return render_template('result.html', result={'error': 'No valid images uploaded for prediction'})
+
+    if len(malignant_probs) == 1:
+        final_class = list(results.values())[0]['result']
+        final_confidence = list(results.values())[0]['confidence']
+    else:
+        used_weights = np.array(used_weights)
+        used_weights = used_weights / np.sum(used_weights)  # Normalize again based on used models
+        weighted_sum = np.dot(used_weights, malignant_probs)
+        final_class = "Malignant" if weighted_sum > 0.5 else "Benign"
+        final_confidence = round(weighted_sum * 100 if final_class == "Malignant" else (1 - weighted_sum) * 100, 2)
+
+    # Add final prediction to results
+    results['final_result'] = final_class
+    results['final_confidence'] = final_confidence
+
+    return render_template('result.html', result=results)
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5500) 
+this is all my ui code 
+
+The following is my dl core code 
+Ultrasound model:
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import cv2
+from PIL import Image
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+import tensorflow as tf
+2025-04-10 04:48:46.552527: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:477] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1744260527.044997      31 cuda_dnn.cc:8310] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1744260527.195480      31 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+# Example path - change this to match your folder structure
+dataset_path = '/kaggle/input/breastcancer-datasets/Dataset_BUSI/Dataset_BUSI_with_GT'
+print("📊 Class-wise image count:\n")
+for class_name in os.listdir(dataset_path):
+    class_dir = os.path.join(dataset_path, class_name)
+    if os.path.isdir(class_dir):
+        num_images = len(os.listdir(class_dir))
+        print(f"{class_name}: {num_images} images")
+        
+📊 Class-wise image count:
+
+benign: 891 images
+normal: 266 images
+malignant: 421 images
+# Specify only the classes you want to use (benign and malignant)
+classes_to_use = ['benign', 'malignant']
+import os
+import shutil
+import random
+# Where to create the new split folders
+output_dir = '/kaggle/working/split_BUSI_dataset'
+
+# Split ratios (e.g., 70% train, 15% val, 15% test)
+split_ratios = (0.7, 0.15, 0.15)
+random.seed(42)
+
+for cls in classes_to_use:
+    class_path = os.path.join(dataset_path, cls)
+    images = [f for f in os.listdir(class_path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    random.shuffle(images)
+    
+    n_total = len(images)
+    n_train = int(split_ratios[0] * n_total)
+    n_val = int(split_ratios[1] * n_total)
+
+    train_files = images[:n_train]
+    val_files = images[n_train:n_train + n_val]
+    test_files = images[n_train + n_val:]
+
+    for split_name, split_files in zip(['train', 'val', 'test'], [train_files, val_files, test_files]):
+        split_class_dir = os.path.join(output_dir, split_name, cls)
+        os.makedirs(split_class_dir, exist_ok=True)
+        for file in split_files:
+            src = os.path.join(class_path, file)
+            dst = os.path.join(split_class_dir, file)
+            shutil.copyfile(src, dst)
+
+print("Dataset successfully split into train, val, and test folders.")
+Dataset successfully split into train, val, and test folders.
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+IMG_SIZE = 224
+BATCH_SIZE = 32
+
+datagen = ImageDataGenerator(rescale=1./255)
+
+train_generator = datagen.flow_from_directory(
+    directory=os.path.join(output_dir, 'train'),
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=True
+)
+
+val_generator = datagen.flow_from_directory(
+    directory=os.path.join(output_dir, 'val'),
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=False
+)
+
+test_generator = datagen.flow_from_directory(
+    directory=os.path.join(output_dir, 'test'),
+    target_size=(IMG_SIZE, IMG_SIZE),
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=False
+)
+Found 917 images belonging to 2 classes.
+Found 196 images belonging to 2 classes.
+Found 199 images belonging to 2 classes.
+print("Class indices:", train_generator.class_indices)
+Class indices: {'benign': 0, 'malignant': 1}
+# Check a single batch from the train generator
+x_batch, y_batch = next(train_generator)
+
+print("Image batch shape:", x_batch.shape)  # (batch_size, IMG_SIZE, IMG_SIZE, 3)
+print("Label batch shape:", y_batch.shape)  # (batch_size, 3)
+print("First label (one-hot):", y_batch[0])
+Image batch shape: (32, 224, 224, 3)
+Label batch shape: (32, 2)
+First label (one-hot): [1. 0.]
+#Class-wise Image Distribution with Counts Displayed
+class_names = ['benign', 'malignant']
+class_counts = []
+
+for class_name in class_names:
+    class_dir = os.path.join(dataset_path, class_name)
+    count = len(os.listdir(class_dir))
+    class_counts.append(count)
+
+plt.figure(figsize=(7, 5))
+bars = plt.bar(class_names, class_counts, color=['skyblue', 'salmon', 'lightgreen'])
+
+# 🔢 Add count numbers on top of bars
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2.0, yval + 5, int(yval), ha='center', fontsize=12, fontweight='bold')
+
+plt.title('Class-wise Image Distribution', fontsize=14)
+plt.xlabel('Class', fontsize=12)
+plt.ylabel('Number of Images', fontsize=12)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(6, 6))
+plt.pie(class_counts, labels=class_names, autopct='%1.1f%%', colors=['skyblue', 'salmon', 'lightgreen'])
+plt.title('Class Distribution (Pie Chart)')
+plt.show()
+
+import cv2
+import random
+import matplotlib.pyplot as plt
+
+random.seed(42)  # Fixed seed for reproducible random choices
+
+plt.figure(figsize=(12, 4))
+
+for i, category in enumerate(class_names):
+    folder_path = os.path.join(dataset_path, category)
+    images = os.listdir(folder_path)
+    img_name = random.choice(images)  # Will always pick the same image now
+    img_path = os.path.join(folder_path, img_name)
+
+    img = cv2.imread(img_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.resize(img, (150, 150))
+
+    plt.subplot(1, 3, i+1)
+    plt.imshow(img)
+    plt.title(f"Class: {category}")
+    plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+#Visualize One Image with Its Augmented Versions
+import os
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
+
+# Augmentation generator
+augment_gen = ImageDataGenerator(
+    rescale=1./255,
+    rotation_range=20,
+    zoom_range=0.1,
+    horizontal_flip=True,
+    shear_range=0.1,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    fill_mode='nearest'
+)
+
+# 🔁 Function to visualize a single image and its augmentations
+def visualize_augmentations(dataset_path, class_names, seed=42, num_augments=8):
+    random.seed(seed)
+
+    # Pick a random class
+    class_name = random.choice(class_names)
+    class_folder = os.path.join(dataset_path, class_name)
+
+    # Pick a random image from that class (reproducible by seed)
+    images = os.listdir(class_folder)
+    random.seed(seed + 1)  # Change seed slightly to randomize image within same seed
+    img_name = random.choice(images)
+    img_path = os.path.join(class_folder, img_name)
+
+    # Load and prepare image
+    img = load_img(img_path, target_size=(IMG_SIZE, IMG_SIZE))
+    img_array = img_to_array(img)
+    img_array = img_array.reshape((1,) + img_array.shape)
+
+    # Plot original + augmentations
+    plt.figure(figsize=(15, 6))
+    plt.subplot(2, num_augments + 1, 1)
+    plt.imshow(np.array(img) / 255.0)  # ✅ FIXED: convert PIL image to array before division
+    plt.title(f"Original - {class_name}")
+    plt.axis('off')
+
+    # Generate augmentations
+    i = 1
+    for batch in augment_gen.flow(img_array, batch_size=1, seed=seed):
+        plt.subplot(2, num_augments + 1, i + 1)
+        plt.imshow(batch[0])
+        plt.title(f"Augmented {i}")
+        plt.axis('off')
+        i += 1
+        if i > num_augments:
+            break
+
+    plt.suptitle("Single Image and Its Augmented Versions", fontsize=16)
+    plt.tight_layout()
+    plt.show()
+visualize_augmentations(dataset_path, class_names, seed=40, num_augments=8)
+
+plt.figure(figsize=(12, 6))
+
+for i, class_name in enumerate(class_names):
+    folder_path = os.path.join(dataset_path, class_name)
+    images = os.listdir(folder_path)
+    for j in range(3):  # Show 3 images per class
+        img_path = os.path.join(folder_path, images[j])
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (150, 150))
+
+        plt.subplot(len(class_names), 3, i*3 + j + 1)
+        plt.imshow(img)
+        plt.title(f"{class_name}")
+        plt.axis('off')
+
+plt.suptitle("Sample Images per Class", fontsize=16)
+plt.tight_layout()
+plt.show()
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Count images per class in each generator
+train_counts = np.bincount(train_generator.classes)
+val_counts = np.bincount(val_generator.classes)
+test_counts = np.bincount(test_generator.classes)
+
+# Class labels
+x_labels = list(train_generator.class_indices.keys())
+
+# Set bar width and position
+x = np.arange(len(x_labels))
+bar_width = 0.25
+
+plt.figure(figsize=(10, 6))
+
+# Plot bars
+bars1 = plt.bar(x - bar_width, train_counts, width=bar_width, label='Train', color='royalblue')
+bars2 = plt.bar(x, val_counts, width=bar_width, label='Validation', color='orange')
+bars3 = plt.bar(x + bar_width, test_counts, width=bar_width, label='Test', color='seagreen')
+
+# Add count labels on top of each bar
+def add_labels(bars):
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2, height + 1, str(height), 
+                 ha='center', va='bottom', fontsize=10)
+
+add_labels(bars1)
+add_labels(bars2)
+add_labels(bars3)
+
+# Labels and aesthetics
+plt.xticks(x, x_labels)
+plt.ylabel("Number of Images")
+plt.title("Class Distribution: Train vs Validation vs Test")
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+from sklearn.utils import class_weight
+import numpy as np
+
+# Assuming 'y_train' is the labels used in your training generator
+y_train_labels = train_generator.classes
+class_weights = class_weight.compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(y_train_labels),
+    y=y_train_labels
+)
+
+class_weights_dict = dict(enumerate(class_weights))
+print("Class Weights:", class_weights_dict)
+Class Weights: {0: 0.7359550561797753, 1: 1.5595238095238095}
+from tensorflow.keras.applications import MobileNetV2, DenseNet121, ResNet50
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, GlobalAveragePooling2D, Dense, Dropout, BatchNormalization
+
+def build_mobilenet_model(input_shape=(224, 224, 3)):
+    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)
+    base_model.trainable = False
+    inputs = Input(shape=input_shape)
+    x = base_model(inputs, training=False)
+    x = GlobalAveragePooling2D()(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.3)(x)
+    x = Dense(128, activation='relu')(x)
+    x = Dropout(0.3)(x)
+    outputs = Dense(2, activation='softmax')(x)
+    model = Model(inputs, outputs)
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    print("\n-------- MobileNetV2 Model Summary --------")
+    model.summary()
+    return model
+def build_densenet_model(input_shape=(224, 224, 3)):
+    base_model = DenseNet121(weights='imagenet', include_top=False, input_shape=input_shape)
+    base_model.trainable = False
+    inputs = Input(shape=input_shape)
+    x = base_model(inputs, training=False)
+    x = GlobalAveragePooling2D()(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.4)(x)
+    x = Dense(128, activation='relu')(x)
+    x = Dropout(0.3)(x)
+    outputs = Dense(2, activation='softmax')(x)
+    model = Model(inputs, outputs)
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    print("\n-------- DenseNet121 Model Summary --------")
+    model.summary()
+    return model
+def build_resnet_model(input_shape=(224, 224, 3)):
+    base_model = ResNet50(weights='imagenet', include_top=False, input_shape=input_shape)
+    base_model.trainable = False
+    inputs = Input(shape=input_shape)
+    x = base_model(inputs, training=False)
+    x = GlobalAveragePooling2D()(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.4)(x)
+    x = Dense(128, activation='relu')(x)
+    x = Dropout(0.3)(x)
+    outputs = Dense(2, activation='softmax')(x)
+    model = Model(inputs, outputs)
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    print("\n-------- ResNet50 Model Summary --------")
+    model.summary()
+    return model
+from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
+
+def train_model(model, model_name):
+    checkpoint = ModelCheckpoint(f"{model_name}_best_model.keras", monitor='val_loss', save_best_only=True, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=1)
+    early_stop = EarlyStopping(monitor='val_loss', patience=7, restore_best_weights=True, verbose=1)
+
+    history = model.fit(
+        train_generator,
+        validation_data=val_generator,
+        epochs=40,
+        callbacks=[checkpoint, reduce_lr, early_stop],
+        class_weight=class_weights_dict
+    )
+    return history
+mobilenet_model = build_mobilenet_model()
+mobilenet_history = train_model(mobilenet_model, "MobileNetV2")
+I0000 00:00:1744262452.470362      31 gpu_device.cc:2022] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13942 MB memory:  -> device: 0, name: Tesla T4, pci bus id: 0000:00:04.0, compute capability: 7.5
+I0000 00:00:1744262452.471096      31 gpu_device.cc:2022] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 13942 MB memory:  -> device: 1, name: Tesla T4, pci bus id: 0000:00:05.0, compute capability: 7.5
+Downloading data from https://storage.googleapis.com/tensorflow/keras-applications/mobilenet_v2/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_224_no_top.h5
+9406464/9406464 ━━━━━━━━━━━━━━━━━━━━ 0s 0us/step
+
+-------- MobileNetV2 Model Summary --------
+Model: "functional"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ input_layer_1 (InputLayer)           │ (None, 224, 224, 3)         │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ mobilenetv2_1.00_224 (Functional)    │ (None, 7, 7, 1280)          │       2,257,984 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ global_average_pooling2d             │ (None, 1280)                │               0 │
+│ (GlobalAveragePooling2D)             │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization                  │ (None, 1280)                │           5,120 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout (Dropout)                    │ (None, 1280)                │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense (Dense)                        │ (None, 128)                 │         163,968 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_1 (Dropout)                  │ (None, 128)                 │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_1 (Dense)                      │ (None, 2)                   │             258 │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 2,427,330 (9.26 MB)
+ Trainable params: 166,786 (651.51 KB)
+ Non-trainable params: 2,260,544 (8.62 MB)
+Epoch 1/40
+/usr/local/lib/python3.11/dist-packages/keras/src/trainers/data_adapters/py_dataset_adapter.py:122: UserWarning: Your `PyDataset` class should call `super().__init__(**kwargs)` in its constructor. `**kwargs` can include `workers`, `use_multiprocessing`, `max_queue_size`. Do not pass these arguments to `fit()`, as they will be ignored.
+  self._warn_if_super_not_called()
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1744262465.422194     165 service.cc:148] XLA service 0x7f03b0001ef0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1744262465.429681     165 service.cc:156]   StreamExecutor device (0): Tesla T4, Compute Capability 7.5
+I0000 00:00:1744262465.429707     165 service.cc:156]   StreamExecutor device (1): Tesla T4, Compute Capability 7.5
+I0000 00:00:1744262466.574528     165 cuda_dnn.cc:529] Loaded cuDNN version 90300
+ 1/29 ━━━━━━━━━━━━━━━━━━━━ 7:40 16s/step - accuracy: 0.4688 - loss: 1.4055
+I0000 00:00:1744262472.910232     165 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 287ms/step - accuracy: 0.7073 - loss: 0.7668
+Epoch 1: val_loss improved from inf to 0.35337, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 32s 552ms/step - accuracy: 0.7125 - loss: 0.7517 - val_accuracy: 0.8061 - val_loss: 0.3534 - learning_rate: 0.0010
+Epoch 2/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 120ms/step - accuracy: 0.8924 - loss: 0.3096
+Epoch 2: val_loss improved from 0.35337 to 0.30682, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 171ms/step - accuracy: 0.8920 - loss: 0.3077 - val_accuracy: 0.8571 - val_loss: 0.3068 - learning_rate: 0.0010
+Epoch 3/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 123ms/step - accuracy: 0.9119 - loss: 0.2356
+Epoch 3: val_loss improved from 0.30682 to 0.30568, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 174ms/step - accuracy: 0.9121 - loss: 0.2349 - val_accuracy: 0.8520 - val_loss: 0.3057 - learning_rate: 0.0010
+Epoch 4/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 127ms/step - accuracy: 0.9392 - loss: 0.1793
+Epoch 4: val_loss improved from 0.30568 to 0.29936, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 191ms/step - accuracy: 0.9379 - loss: 0.1810 - val_accuracy: 0.8571 - val_loss: 0.2994 - learning_rate: 0.0010
+Epoch 5/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 121ms/step - accuracy: 0.9327 - loss: 0.1730
+Epoch 5: val_loss did not improve from 0.29936
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 157ms/step - accuracy: 0.9323 - loss: 0.1743 - val_accuracy: 0.8520 - val_loss: 0.3042 - learning_rate: 0.0010
+Epoch 6/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 126ms/step - accuracy: 0.9452 - loss: 0.1244
+Epoch 6: val_loss improved from 0.29936 to 0.29036, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 177ms/step - accuracy: 0.9458 - loss: 0.1241 - val_accuracy: 0.8622 - val_loss: 0.2904 - learning_rate: 0.0010
+Epoch 7/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 120ms/step - accuracy: 0.9674 - loss: 0.0926
+Epoch 7: val_loss improved from 0.29036 to 0.27056, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 170ms/step - accuracy: 0.9668 - loss: 0.0934 - val_accuracy: 0.8929 - val_loss: 0.2706 - learning_rate: 0.0010
+Epoch 8/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 123ms/step - accuracy: 0.9664 - loss: 0.0809
+Epoch 8: val_loss did not improve from 0.27056
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 157ms/step - accuracy: 0.9659 - loss: 0.0823 - val_accuracy: 0.9184 - val_loss: 0.2887 - learning_rate: 0.0010
+Epoch 9/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.9587 - loss: 0.1131
+Epoch 9: val_loss did not improve from 0.27056
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 161ms/step - accuracy: 0.9584 - loss: 0.1137 - val_accuracy: 0.9082 - val_loss: 0.2965 - learning_rate: 0.0010
+Epoch 10/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 126ms/step - accuracy: 0.9478 - loss: 0.1331
+Epoch 10: val_loss improved from 0.27056 to 0.26651, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 179ms/step - accuracy: 0.9486 - loss: 0.1312 - val_accuracy: 0.9133 - val_loss: 0.2665 - learning_rate: 0.0010
+Epoch 11/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 122ms/step - accuracy: 0.9685 - loss: 0.0759
+Epoch 11: val_loss improved from 0.26651 to 0.26545, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 172ms/step - accuracy: 0.9683 - loss: 0.0766 - val_accuracy: 0.9286 - val_loss: 0.2654 - learning_rate: 0.0010
+Epoch 12/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 117ms/step - accuracy: 0.9667 - loss: 0.0700
+Epoch 12: val_loss did not improve from 0.26545
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 154ms/step - accuracy: 0.9664 - loss: 0.0711 - val_accuracy: 0.9133 - val_loss: 0.2849 - learning_rate: 0.0010
+Epoch 13/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 123ms/step - accuracy: 0.9602 - loss: 0.1131
+Epoch 13: val_loss did not improve from 0.26545
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 158ms/step - accuracy: 0.9606 - loss: 0.1114 - val_accuracy: 0.9133 - val_loss: 0.2825 - learning_rate: 0.0010
+Epoch 14/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.9804 - loss: 0.0579
+Epoch 14: val_loss improved from 0.26545 to 0.26485, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 175ms/step - accuracy: 0.9798 - loss: 0.0590 - val_accuracy: 0.9184 - val_loss: 0.2649 - learning_rate: 0.0010
+Epoch 15/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 124ms/step - accuracy: 0.9765 - loss: 0.0703
+Epoch 15: val_loss improved from 0.26485 to 0.25347, saving model to MobileNetV2_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 179ms/step - accuracy: 0.9767 - loss: 0.0699 - val_accuracy: 0.9184 - val_loss: 0.2535 - learning_rate: 0.0010
+Epoch 16/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 119ms/step - accuracy: 0.9769 - loss: 0.0585
+Epoch 16: val_loss did not improve from 0.25347
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 153ms/step - accuracy: 0.9770 - loss: 0.0589 - val_accuracy: 0.9082 - val_loss: 0.2870 - learning_rate: 0.0010
+Epoch 17/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 132ms/step - accuracy: 0.9758 - loss: 0.0817
+Epoch 17: val_loss did not improve from 0.25347
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 167ms/step - accuracy: 0.9756 - loss: 0.0818 - val_accuracy: 0.8980 - val_loss: 0.2916 - learning_rate: 0.0010
+Epoch 18/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 124ms/step - accuracy: 0.9819 - loss: 0.0461
+Epoch 18: val_loss did not improve from 0.25347
+
+Epoch 18: ReduceLROnPlateau reducing learning rate to 0.00020000000949949026.
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 160ms/step - accuracy: 0.9816 - loss: 0.0464 - val_accuracy: 0.9082 - val_loss: 0.3036 - learning_rate: 0.0010
+Epoch 19/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 126ms/step - accuracy: 0.9780 - loss: 0.0585
+Epoch 19: val_loss did not improve from 0.25347
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 162ms/step - accuracy: 0.9781 - loss: 0.0584 - val_accuracy: 0.8980 - val_loss: 0.2966 - learning_rate: 2.0000e-04
+Epoch 20/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.9869 - loss: 0.0378
+Epoch 20: val_loss did not improve from 0.25347
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 166ms/step - accuracy: 0.9862 - loss: 0.0387 - val_accuracy: 0.8980 - val_loss: 0.2860 - learning_rate: 2.0000e-04
+Epoch 21/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.9900 - loss: 0.0320
+Epoch 21: val_loss did not improve from 0.25347
+
+Epoch 21: ReduceLROnPlateau reducing learning rate to 4.0000001899898055e-05.
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 161ms/step - accuracy: 0.9899 - loss: 0.0323 - val_accuracy: 0.8980 - val_loss: 0.2845 - learning_rate: 2.0000e-04
+Epoch 22/40
+28/29 ━━━━━━━━━━━━━━━━━━━━ 0s 122ms/step - accuracy: 0.9749 - loss: 0.0456
+Epoch 22: val_loss did not improve from 0.25347
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 156ms/step - accuracy: 0.9752 - loss: 0.0452 - val_accuracy: 0.9031 - val_loss: 0.2849 - learning_rate: 4.0000e-05
+Epoch 22: early stopping
+Restoring model weights from the end of the best epoch: 15.
+densenet_model = build_densenet_model()
+densenet_history = train_model(densenet_model, "DenseNet121")
+Downloading data from https://storage.googleapis.com/tensorflow/keras-applications/densenet/densenet121_weights_tf_dim_ordering_tf_kernels_notop.h5
+29084464/29084464 ━━━━━━━━━━━━━━━━━━━━ 0s 0us/step
+
+-------- DenseNet121 Model Summary --------
+Model: "functional_1"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ input_layer_3 (InputLayer)           │ (None, 224, 224, 3)         │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ densenet121 (Functional)             │ (None, 7, 7, 1024)          │       7,037,504 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ global_average_pooling2d_1           │ (None, 1024)                │               0 │
+│ (GlobalAveragePooling2D)             │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_1                │ (None, 1024)                │           4,096 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_2 (Dropout)                  │ (None, 1024)                │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_2 (Dense)                      │ (None, 128)                 │         131,200 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_3 (Dropout)                  │ (None, 128)                 │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_3 (Dense)                      │ (None, 2)                   │             258 │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 7,173,058 (27.36 MB)
+ Trainable params: 133,506 (521.51 KB)
+ Non-trainable params: 7,039,552 (26.85 MB)
+Epoch 1/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 563ms/step - accuracy: 0.7411 - loss: 0.5596
+Epoch 1: val_loss improved from inf to 0.34741, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 73s 1s/step - accuracy: 0.7430 - loss: 0.5574 - val_accuracy: 0.8469 - val_loss: 0.3474 - learning_rate: 0.0010
+Epoch 2/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 130ms/step - accuracy: 0.8414 - loss: 0.3665
+Epoch 2: val_loss improved from 0.34741 to 0.28844, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 207ms/step - accuracy: 0.8422 - loss: 0.3646 - val_accuracy: 0.8673 - val_loss: 0.2884 - learning_rate: 0.0010
+Epoch 3/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 137ms/step - accuracy: 0.8862 - loss: 0.2484
+Epoch 3: val_loss improved from 0.28844 to 0.24049, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 216ms/step - accuracy: 0.8860 - loss: 0.2486 - val_accuracy: 0.8878 - val_loss: 0.2405 - learning_rate: 0.0010
+Epoch 4/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 127ms/step - accuracy: 0.8798 - loss: 0.2672
+Epoch 4: val_loss improved from 0.24049 to 0.23144, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 204ms/step - accuracy: 0.8801 - loss: 0.2670 - val_accuracy: 0.8980 - val_loss: 0.2314 - learning_rate: 0.0010
+Epoch 5/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 124ms/step - accuracy: 0.8920 - loss: 0.2081
+Epoch 5: val_loss did not improve from 0.23144
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 163ms/step - accuracy: 0.8924 - loss: 0.2078 - val_accuracy: 0.8827 - val_loss: 0.2368 - learning_rate: 0.0010
+Epoch 6/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.9294 - loss: 0.1848
+Epoch 6: val_loss improved from 0.23144 to 0.21698, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 206ms/step - accuracy: 0.9289 - loss: 0.1857 - val_accuracy: 0.8878 - val_loss: 0.2170 - learning_rate: 0.0010
+Epoch 7/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 130ms/step - accuracy: 0.9045 - loss: 0.2073
+Epoch 7: val_loss improved from 0.21698 to 0.20255, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 214ms/step - accuracy: 0.9046 - loss: 0.2079 - val_accuracy: 0.9133 - val_loss: 0.2025 - learning_rate: 0.0010
+Epoch 8/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 134ms/step - accuracy: 0.8927 - loss: 0.2413
+Epoch 8: val_loss did not improve from 0.20255
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 176ms/step - accuracy: 0.8931 - loss: 0.2405 - val_accuracy: 0.9082 - val_loss: 0.2093 - learning_rate: 0.0010
+Epoch 9/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.9189 - loss: 0.1895
+Epoch 9: val_loss improved from 0.20255 to 0.18821, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 201ms/step - accuracy: 0.9187 - loss: 0.1897 - val_accuracy: 0.9235 - val_loss: 0.1882 - learning_rate: 0.0010
+Epoch 10/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 136ms/step - accuracy: 0.9137 - loss: 0.1761
+Epoch 10: val_loss did not improve from 0.18821
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 177ms/step - accuracy: 0.9139 - loss: 0.1758 - val_accuracy: 0.9235 - val_loss: 0.1891 - learning_rate: 0.0010
+Epoch 11/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 129ms/step - accuracy: 0.9324 - loss: 0.1714
+Epoch 11: val_loss did not improve from 0.18821
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 169ms/step - accuracy: 0.9325 - loss: 0.1712 - val_accuracy: 0.9184 - val_loss: 0.1962 - learning_rate: 0.0010
+Epoch 12/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 124ms/step - accuracy: 0.9400 - loss: 0.1477
+Epoch 12: val_loss did not improve from 0.18821
+
+Epoch 12: ReduceLROnPlateau reducing learning rate to 0.00020000000949949026.
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 165ms/step - accuracy: 0.9398 - loss: 0.1476 - val_accuracy: 0.8980 - val_loss: 0.2077 - learning_rate: 0.0010
+Epoch 13/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 128ms/step - accuracy: 0.9410 - loss: 0.1277
+Epoch 13: val_loss did not improve from 0.18821
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 169ms/step - accuracy: 0.9411 - loss: 0.1276 - val_accuracy: 0.9082 - val_loss: 0.2024 - learning_rate: 2.0000e-04
+Epoch 14/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.9451 - loss: 0.1334
+Epoch 14: val_loss did not improve from 0.18821
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 164ms/step - accuracy: 0.9451 - loss: 0.1337 - val_accuracy: 0.9184 - val_loss: 0.1959 - learning_rate: 2.0000e-04
+Epoch 15/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.9463 - loss: 0.1465
+Epoch 15: val_loss improved from 0.18821 to 0.18549, saving model to DenseNet121_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 207ms/step - accuracy: 0.9458 - loss: 0.1475 - val_accuracy: 0.9337 - val_loss: 0.1855 - learning_rate: 2.0000e-04
+Epoch 16/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 124ms/step - accuracy: 0.9600 - loss: 0.1160
+Epoch 16: val_loss did not improve from 0.18549
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 165ms/step - accuracy: 0.9599 - loss: 0.1162 - val_accuracy: 0.9184 - val_loss: 0.1890 - learning_rate: 2.0000e-04
+Epoch 17/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.9492 - loss: 0.1208
+Epoch 17: val_loss did not improve from 0.18549
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 164ms/step - accuracy: 0.9492 - loss: 0.1208 - val_accuracy: 0.9235 - val_loss: 0.1935 - learning_rate: 2.0000e-04
+Epoch 18/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 123ms/step - accuracy: 0.9428 - loss: 0.1509
+Epoch 18: val_loss did not improve from 0.18549
+
+Epoch 18: ReduceLROnPlateau reducing learning rate to 4.0000001899898055e-05.
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 164ms/step - accuracy: 0.9430 - loss: 0.1503 - val_accuracy: 0.9235 - val_loss: 0.1935 - learning_rate: 2.0000e-04
+Epoch 19/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 126ms/step - accuracy: 0.9368 - loss: 0.1403
+Epoch 19: val_loss did not improve from 0.18549
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 168ms/step - accuracy: 0.9373 - loss: 0.1396 - val_accuracy: 0.9235 - val_loss: 0.1951 - learning_rate: 4.0000e-05
+Epoch 20/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.9427 - loss: 0.1279
+Epoch 20: val_loss did not improve from 0.18549
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 171ms/step - accuracy: 0.9426 - loss: 0.1278 - val_accuracy: 0.9235 - val_loss: 0.1980 - learning_rate: 4.0000e-05
+Epoch 21/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 123ms/step - accuracy: 0.9372 - loss: 0.1281
+Epoch 21: val_loss did not improve from 0.18549
+
+Epoch 21: ReduceLROnPlateau reducing learning rate to 8.000000525498762e-06.
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 164ms/step - accuracy: 0.9373 - loss: 0.1286 - val_accuracy: 0.9235 - val_loss: 0.1990 - learning_rate: 4.0000e-05
+Epoch 22/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.9546 - loss: 0.0997
+Epoch 22: val_loss did not improve from 0.18549
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 168ms/step - accuracy: 0.9545 - loss: 0.0998 - val_accuracy: 0.9235 - val_loss: 0.1997 - learning_rate: 8.0000e-06
+Epoch 22: early stopping
+Restoring model weights from the end of the best epoch: 15.
+resnet_model = build_resnet_model()
+resnet_history = train_model(resnet_model, "ResNet50")
+Downloading data from https://storage.googleapis.com/tensorflow/keras-applications/resnet/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5
+94765736/94765736 ━━━━━━━━━━━━━━━━━━━━ 0s 0us/step
+
+-------- ResNet50 Model Summary --------
+Model: "functional_3"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ input_layer_7 (InputLayer)           │ (None, 224, 224, 3)         │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ resnet50 (Functional)                │ (None, 7, 7, 2048)          │      23,587,712 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ global_average_pooling2d_3           │ (None, 2048)                │               0 │
+│ (GlobalAveragePooling2D)             │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_3                │ (None, 2048)                │           8,192 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_6 (Dropout)                  │ (None, 2048)                │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_6 (Dense)                      │ (None, 128)                 │         262,272 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_7 (Dropout)                  │ (None, 128)                 │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_7 (Dense)                      │ (None, 2)                   │             258 │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 23,858,434 (91.01 MB)
+ Trainable params: 266,626 (1.02 MB)
+ Non-trainable params: 23,591,808 (90.00 MB)
+Epoch 1/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 304ms/step - accuracy: 0.6327 - loss: 0.6395
+Epoch 1: val_loss improved from inf to 0.56536, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 37s 641ms/step - accuracy: 0.6352 - loss: 0.6366 - val_accuracy: 0.7041 - val_loss: 0.5654 - learning_rate: 0.0010
+Epoch 2/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 137ms/step - accuracy: 0.8335 - loss: 0.3639
+Epoch 2: val_loss improved from 0.56536 to 0.54857, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 209ms/step - accuracy: 0.8328 - loss: 0.3650 - val_accuracy: 0.7041 - val_loss: 0.5486 - learning_rate: 0.0010
+Epoch 3/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 127ms/step - accuracy: 0.8085 - loss: 0.3881
+Epoch 3: val_loss improved from 0.54857 to 0.50625, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 201ms/step - accuracy: 0.8089 - loss: 0.3878 - val_accuracy: 0.7755 - val_loss: 0.5062 - learning_rate: 0.0010
+Epoch 4/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 127ms/step - accuracy: 0.8327 - loss: 0.3659
+Epoch 4: val_loss improved from 0.50625 to 0.48243, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 201ms/step - accuracy: 0.8321 - loss: 0.3663 - val_accuracy: 0.7755 - val_loss: 0.4824 - learning_rate: 0.0010
+Epoch 5/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 141ms/step - accuracy: 0.8457 - loss: 0.3250
+Epoch 5: val_loss did not improve from 0.48243
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 182ms/step - accuracy: 0.8451 - loss: 0.3259 - val_accuracy: 0.7704 - val_loss: 0.4832 - learning_rate: 0.0010
+Epoch 6/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.8443 - loss: 0.3244
+Epoch 6: val_loss improved from 0.48243 to 0.44175, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 204ms/step - accuracy: 0.8443 - loss: 0.3252 - val_accuracy: 0.8061 - val_loss: 0.4418 - learning_rate: 0.0010
+Epoch 7/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 138ms/step - accuracy: 0.8358 - loss: 0.3547
+Epoch 7: val_loss improved from 0.44175 to 0.43687, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 212ms/step - accuracy: 0.8364 - loss: 0.3541 - val_accuracy: 0.8061 - val_loss: 0.4369 - learning_rate: 0.0010
+Epoch 8/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 128ms/step - accuracy: 0.8252 - loss: 0.3870
+Epoch 8: val_loss improved from 0.43687 to 0.42427, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 201ms/step - accuracy: 0.8262 - loss: 0.3852 - val_accuracy: 0.8061 - val_loss: 0.4243 - learning_rate: 0.0010
+Epoch 9/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 130ms/step - accuracy: 0.8637 - loss: 0.2959
+Epoch 9: val_loss improved from 0.42427 to 0.39546, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 205ms/step - accuracy: 0.8635 - loss: 0.2965 - val_accuracy: 0.8163 - val_loss: 0.3955 - learning_rate: 0.0010
+Epoch 10/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 135ms/step - accuracy: 0.8723 - loss: 0.3071
+Epoch 10: val_loss improved from 0.39546 to 0.37241, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 206ms/step - accuracy: 0.8720 - loss: 0.3068 - val_accuracy: 0.8163 - val_loss: 0.3724 - learning_rate: 0.0010
+Epoch 11/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.8626 - loss: 0.2675
+Epoch 11: val_loss did not improve from 0.37241
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 173ms/step - accuracy: 0.8627 - loss: 0.2678 - val_accuracy: 0.8724 - val_loss: 0.3748 - learning_rate: 0.0010
+Epoch 12/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 127ms/step - accuracy: 0.8418 - loss: 0.3066
+Epoch 12: val_loss did not improve from 0.37241
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 167ms/step - accuracy: 0.8417 - loss: 0.3069 - val_accuracy: 0.8418 - val_loss: 0.3740 - learning_rate: 0.0010
+Epoch 13/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 133ms/step - accuracy: 0.8855 - loss: 0.2830
+Epoch 13: val_loss improved from 0.37241 to 0.35319, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 204ms/step - accuracy: 0.8852 - loss: 0.2832 - val_accuracy: 0.8724 - val_loss: 0.3532 - learning_rate: 0.0010
+Epoch 14/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 134ms/step - accuracy: 0.8711 - loss: 0.2805
+Epoch 14: val_loss improved from 0.35319 to 0.34893, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 204ms/step - accuracy: 0.8712 - loss: 0.2803 - val_accuracy: 0.8878 - val_loss: 0.3489 - learning_rate: 0.0010
+Epoch 15/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 133ms/step - accuracy: 0.8724 - loss: 0.2748
+Epoch 15: val_loss improved from 0.34893 to 0.31116, saving model to ResNet50_best_model.keras
+29/29 ━━━━━━━━━━━━━━━━━━━━ 7s 205ms/step - accuracy: 0.8724 - loss: 0.2751 - val_accuracy: 0.8673 - val_loss: 0.3112 - learning_rate: 0.0010
+Epoch 16/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 137ms/step - accuracy: 0.8489 - loss: 0.3604
+Epoch 16: val_loss did not improve from 0.31116
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 177ms/step - accuracy: 0.8494 - loss: 0.3588 - val_accuracy: 0.8724 - val_loss: 0.3436 - learning_rate: 0.0010
+Epoch 17/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 135ms/step - accuracy: 0.8830 - loss: 0.2586
+Epoch 17: val_loss did not improve from 0.31116
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 174ms/step - accuracy: 0.8830 - loss: 0.2594 - val_accuracy: 0.8367 - val_loss: 0.3368 - learning_rate: 0.0010
+Epoch 18/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 129ms/step - accuracy: 0.8837 - loss: 0.2560
+Epoch 18: val_loss did not improve from 0.31116
+
+Epoch 18: ReduceLROnPlateau reducing learning rate to 0.00020000000949949026.
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 169ms/step - accuracy: 0.8836 - loss: 0.2565 - val_accuracy: 0.8418 - val_loss: 0.3631 - learning_rate: 0.0010
+Epoch 19/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.9077 - loss: 0.2407
+Epoch 19: val_loss did not improve from 0.31116
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 172ms/step - accuracy: 0.9074 - loss: 0.2413 - val_accuracy: 0.8571 - val_loss: 0.3308 - learning_rate: 2.0000e-04
+Epoch 20/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 125ms/step - accuracy: 0.8825 - loss: 0.2538
+Epoch 20: val_loss did not improve from 0.31116
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 164ms/step - accuracy: 0.8829 - loss: 0.2540 - val_accuracy: 0.8469 - val_loss: 0.3435 - learning_rate: 2.0000e-04
+Epoch 21/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 133ms/step - accuracy: 0.8712 - loss: 0.2660
+Epoch 21: val_loss did not improve from 0.31116
+
+Epoch 21: ReduceLROnPlateau reducing learning rate to 4.0000001899898055e-05.
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 172ms/step - accuracy: 0.8714 - loss: 0.2658 - val_accuracy: 0.8520 - val_loss: 0.3244 - learning_rate: 2.0000e-04
+Epoch 22/40
+29/29 ━━━━━━━━━━━━━━━━━━━━ 0s 127ms/step - accuracy: 0.8992 - loss: 0.2421
+Epoch 22: val_loss did not improve from 0.31116
+29/29 ━━━━━━━━━━━━━━━━━━━━ 6s 167ms/step - accuracy: 0.8992 - loss: 0.2418 - val_accuracy: 0.8520 - val_loss: 0.3241 - learning_rate: 4.0000e-05
+Epoch 22: early stopping
+Restoring model weights from the end of the best epoch: 15.
+def summarize_history(history, model_name):
+    train_acc = history.history['accuracy'][-1]
+    val_acc = history.history['val_accuracy'][-1]
+    print(f"\n{model_name} - Training Accuracy: {train_acc:.4f}, Validation Accuracy: {val_acc:.4f}")
+    return train_acc, val_acc
+from sklearn.metrics import classification_report
+import numpy as np
+
+def evaluate_on_test(model, model_name):
+    test_loss, test_acc = model.evaluate(test_generator, verbose=0)
+    print(f"{model_name} - Test Accuracy: {test_acc:.4f}")
+
+    y_true = test_generator.classes
+    y_pred = np.argmax(model.predict(test_generator), axis=1)
+
+    print(f"\nClassification Report for {model_name}:\n")
+    print(classification_report(y_true, y_pred, target_names=test_generator.class_indices.keys()))
+    return test_acc
+import matplotlib.pyplot as plt
+
+def plot_history(history, model_name):
+    plt.figure(figsize=(12, 4))
+
+    # Accuracy
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Train Accuracy')
+    plt.plot(history.history['val_accuracy'], label='Val Accuracy')
+    plt.title(f'{model_name} Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid()
+
+    # Loss
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Train Loss')
+    plt.plot(history.history['val_loss'], label='Val Loss')
+    plt.title(f'{model_name} Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid()
+
+    plt.tight_layout()
+    plt.show()
+model_accuracies = {}
+
+# DenseNet
+d_train, d_val = summarize_history(densenet_history, "DenseNet121")
+d_test = evaluate_on_test(densenet_model, "DenseNet121")
+plot_history(densenet_history, "DenseNet121")
+model_accuracies["DenseNet121"] = d_test
+
+# MobileNetV2
+m_train, m_val = summarize_history(mobilenet_history, "MobileNetV2")
+m_test = evaluate_on_test(mobilenet_model, "MobileNetV2")
+plot_history(mobilenet_history, "MobileNetV2")
+model_accuracies["MobileNetV2"] = m_test
+
+# ResNet50
+r_train, r_val = summarize_history(resnet_history, "ResNet50")
+r_test = evaluate_on_test(resnet_model, "ResNet50")
+plot_history(resnet_history, "ResNet50")
+model_accuracies["ResNet50"] = r_test
+
+# Select and save the best model
+best_model_name = max(model_accuracies, key=model_accuracies.get)
+print(f"\n🔍 Best model based on test accuracy: {best_model_name}")
+
+if best_model_name == "DenseNet121":
+    densenet_model.save("ultrasound_breast_cancer_model.h5")
+elif best_model_name == "MobileNetV2":
+    mobilenet_model.save("ultrasound_breast_cancer_model.h5")
+elif best_model_name == "ResNet50":
+    resnet_model.save("ultrasound_breast_cancer_model.h5")
+DenseNet121 - Training Accuracy: 0.9498, Validation Accuracy: 0.9235
+DenseNet121 - Test Accuracy: 0.9397
+7/7 ━━━━━━━━━━━━━━━━━━━━ 24s 2s/step 
+
+Classification Report for DenseNet121:
+
+              precision    recall  f1-score   support
+
+      benign       0.96      0.96      0.96       135
+   malignant       0.91      0.91      0.91        64
+
+    accuracy                           0.94       199
+   macro avg       0.93      0.93      0.93       199
+weighted avg       0.94      0.94      0.94       199
+
+
+MobileNetV2 - Training Accuracy: 0.9793, Validation Accuracy: 0.9031
+MobileNetV2 - Test Accuracy: 0.9196
+7/7 ━━━━━━━━━━━━━━━━━━━━ 8s 669ms/step
+
+Classification Report for MobileNetV2:
+
+              precision    recall  f1-score   support
+
+      benign       0.93      0.95      0.94       135
+   malignant       0.89      0.86      0.87        64
+
+    accuracy                           0.92       199
+   macro avg       0.91      0.90      0.91       199
+weighted avg       0.92      0.92      0.92       199
+
+
+ResNet50 - Training Accuracy: 0.8975, Validation Accuracy: 0.8520
+ResNet50 - Test Accuracy: 0.8643
+7/7 ━━━━━━━━━━━━━━━━━━━━ 10s 782ms/step
+
+Classification Report for ResNet50:
+
+              precision    recall  f1-score   support
+
+      benign       0.86      0.96      0.91       135
+   malignant       0.89      0.66      0.76        64
+
+    accuracy                           0.86       199
+   macro avg       0.87      0.81      0.83       199
+weighted avg       0.87      0.86      0.86       199
+
+
+🔍 Best model based on test accuracy: DenseNet121
+print(f"✅ The best model ({best_model_name}) has been saved as 'ultrasound_breast_cancer_model.h5'")
+✅ The best model (DenseNet121) has been saved as 'ultrasound_breast_cancer_model.h5'
+# Importing Necessary Libraries
+
+ 2.MRI model:
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, BatchNormalization
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from sklearn.metrics import classification_report, confusion_matrix
+import os
+import shutil
+import random
+from sklearn.model_selection import train_test_split
+
+# Paths
+source_dir = '/kaggle/input/breastcancer-datasets/Breast Cancer Patients MRI/Breast Cancer Patients MRI'
+output_dir = '/kaggle/working/split_MRI_dataset'
+
+# Make sure this matches the actual class folder names inside your source_dir
+classes_to_use = ['Benign', 'Malignant']
+
+# Create target dirs
+for split in ['train', 'val', 'test']:
+    for cls in classes_to_use:
+        os.makedirs(os.path.join(output_dir, split, cls), exist_ok=True)
+
+# Split ratio
+train_ratio = 0.7
+val_ratio = 0.15
+test_ratio = 0.15
+
+# Split and copy images
+for cls in classes_to_use:
+    cls_dir = os.path.join(source_dir, cls)
+    all_images = os.listdir(cls_dir)
+    random.shuffle(all_images)
+
+    train_files, temp_files = train_test_split(all_images, train_size=train_ratio, random_state=42)
+    val_files, test_files = train_test_split(temp_files, test_size=test_ratio / (val_ratio + test_ratio), random_state=42)
+
+    for img in train_files:
+        shutil.copy(os.path.join(cls_dir, img), os.path.join(output_dir, 'train', cls, img))
+
+    for img in val_files:
+        shutil.copy(os.path.join(cls_dir, img), os.path.join(output_dir, 'val', cls, img))
+
+    for img in test_files:
+        shutil.copy(os.path.join(cls_dir, img), os.path.join(output_dir, 'test', cls, img))
+
+print("✅ MRI dataset successfully split into train, validation, and test sets!")
+✅ MRI dataset successfully split into train, validation, and test sets!
+# Image Parameters
+img_height, img_width = 224, 224  
+batch_size = 32
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+datagen = ImageDataGenerator(
+    rescale=1.0/255,
+    rotation_range=10,           # Slight rotation to simulate different orientations
+    width_shift_range=0.05,      # Small horizontal shift
+    height_shift_range=0.05,     # Small vertical shift
+    zoom_range=0.1,              # Small zoom-in/out
+    horizontal_flip=True,        # Flip to simulate left/right breast changes
+    fill_mode='nearest'          # Filling in empty pixels after transforms
+)
+
+
+# Train generator
+train_generator = datagen.flow_from_directory(
+    directory=os.path.join(output_dir, 'train'),
+    target_size=(img_height, img_width),
+    batch_size=batch_size,
+    class_mode='categorical',
+    shuffle=True,
+    classes=['Benign', 'Malignant']
+)
+
+# Validation generator
+validation_generator = datagen.flow_from_directory(
+    directory=os.path.join(output_dir, 'val'),
+    target_size=(img_height, img_width),
+    batch_size=batch_size,
+    class_mode='categorical',
+    shuffle=False,
+    classes=['Benign', 'Malignant']
+)
+
+# Test generator
+test_generator = datagen.flow_from_directory(
+    directory=os.path.join(output_dir, 'test'),
+    target_size=(img_height, img_width),
+    batch_size=batch_size,
+    class_mode='categorical',
+    shuffle=False,
+    classes=['Benign', 'Malignant']
+)
+Found 1368 images belonging to 2 classes.
+Found 421 images belonging to 2 classes.
+Found 415 images belonging to 2 classes.
+print("Class indices:", train_generator.class_indices)
+Class indices: {'Benign': 0, 'Malignant': 1}
+print("📊 Image Counts in Each Class:")
+total = 0
+for cls in classes_to_use:
+    cls_path = os.path.join(source_dir, cls)
+    num_images = len([f for f in os.listdir(cls_path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))])
+    total += num_images
+    print(f"🔹 {cls}: {num_images} images")
+📊 Image Counts in Each Class:
+🔹 Benign: 740 images
+🔹 Malignant: 740 images
+from tensorflow.keras.applications import EfficientNetB0
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import EfficientNetB0
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from sklearn.metrics import classification_report, confusion_matrix
+from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
+
+def train_model(model, model_name):
+    checkpoint = ModelCheckpoint(f"{model_name}_best_model.keras", monitor='val_loss', save_best_only=True, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=1)
+    early_stop = EarlyStopping(monitor='val_loss', patience=7, restore_best_weights=True, verbose=1)
+
+    history = model.fit(
+        train_generator,
+        validation_data=validation_generator,
+        epochs=40,
+        callbacks=[checkpoint, reduce_lr, early_stop],
+       
+    )
+    return history
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+
+def build_sequential_mri_model(input_shape=(224, 224, 3)):
+    model = Sequential([
+        Conv2D(32, (3,3), activation='relu', input_shape=input_shape),
+        MaxPooling2D(2, 2),
+
+        Conv2D(64, (3,3), activation='relu'),
+        MaxPooling2D(2, 2),
+
+        Conv2D(128, (3,3), activation='relu'),
+        MaxPooling2D(2, 2),
+        Conv2D(128, (3,3), activation='relu'),
+        MaxPooling2D(2, 2),
+        
+
+        Flatten(),
+        Dense(128, activation='relu'),
+        Dropout(0.5),
+        Dense(2, activation='softmax')  # Binary classification
+    ])
+
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+# img_height, img_width = 224, 224
+seq_mri_model = build_sequential_mri_model()
+seq_mri_history = train_model(seq_mri_model, "seq_MRI")
+/usr/local/lib/python3.11/dist-packages/keras/src/layers/convolutional/base_conv.py:107: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.
+  super().__init__(activity_regularizer=activity_regularizer, **kwargs)
+Epoch 1/40
+/usr/local/lib/python3.11/dist-packages/keras/src/trainers/data_adapters/py_dataset_adapter.py:122: UserWarning: Your `PyDataset` class should call `super().__init__(**kwargs)` in its constructor. `**kwargs` can include `workers`, `use_multiprocessing`, `max_queue_size`. Do not pass these arguments to `fit()`, as they will be ignored.
+  self._warn_if_super_not_called()
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 370ms/step - accuracy: 0.5129 - loss: 0.7260
+Epoch 1: val_loss improved from inf to 0.66837, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 28s 520ms/step - accuracy: 0.5137 - loss: 0.7254 - val_accuracy: 0.6128 - val_loss: 0.6684 - learning_rate: 0.0010
+Epoch 2/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 293ms/step - accuracy: 0.6170 - loss: 0.6587
+Epoch 2: val_loss improved from 0.66837 to 0.65854, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 393ms/step - accuracy: 0.6170 - loss: 0.6588 - val_accuracy: 0.5986 - val_loss: 0.6585 - learning_rate: 0.0010
+Epoch 3/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 282ms/step - accuracy: 0.6162 - loss: 0.6522
+Epoch 3: val_loss improved from 0.65854 to 0.65498, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 390ms/step - accuracy: 0.6162 - loss: 0.6524 - val_accuracy: 0.6033 - val_loss: 0.6550 - learning_rate: 0.0010
+Epoch 4/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 286ms/step - accuracy: 0.6137 - loss: 0.6535
+Epoch 4: val_loss improved from 0.65498 to 0.61203, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 384ms/step - accuracy: 0.6146 - loss: 0.6528 - val_accuracy: 0.6817 - val_loss: 0.6120 - learning_rate: 0.0010
+Epoch 5/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 283ms/step - accuracy: 0.6877 - loss: 0.5981
+Epoch 5: val_loss improved from 0.61203 to 0.60127, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 388ms/step - accuracy: 0.6874 - loss: 0.5984 - val_accuracy: 0.6793 - val_loss: 0.6013 - learning_rate: 0.0010
+Epoch 6/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 287ms/step - accuracy: 0.6578 - loss: 0.6030
+Epoch 6: val_loss improved from 0.60127 to 0.59015, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 387ms/step - accuracy: 0.6582 - loss: 0.6026 - val_accuracy: 0.7007 - val_loss: 0.5901 - learning_rate: 0.0010
+Epoch 7/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 286ms/step - accuracy: 0.6906 - loss: 0.5846
+Epoch 7: val_loss improved from 0.59015 to 0.56709, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 386ms/step - accuracy: 0.6910 - loss: 0.5843 - val_accuracy: 0.7126 - val_loss: 0.5671 - learning_rate: 0.0010
+Epoch 8/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 289ms/step - accuracy: 0.7139 - loss: 0.5510
+Epoch 8: val_loss improved from 0.56709 to 0.52137, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 391ms/step - accuracy: 0.7140 - loss: 0.5513 - val_accuracy: 0.7316 - val_loss: 0.5214 - learning_rate: 0.0010
+Epoch 9/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 283ms/step - accuracy: 0.7212 - loss: 0.5421
+Epoch 9: val_loss improved from 0.52137 to 0.51575, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 379ms/step - accuracy: 0.7212 - loss: 0.5424 - val_accuracy: 0.7577 - val_loss: 0.5158 - learning_rate: 0.0010
+Epoch 10/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 285ms/step - accuracy: 0.7139 - loss: 0.5587
+Epoch 10: val_loss improved from 0.51575 to 0.49987, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 383ms/step - accuracy: 0.7142 - loss: 0.5583 - val_accuracy: 0.7363 - val_loss: 0.4999 - learning_rate: 0.0010
+Epoch 11/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 282ms/step - accuracy: 0.7266 - loss: 0.5206
+Epoch 11: val_loss did not improve from 0.49987
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 378ms/step - accuracy: 0.7277 - loss: 0.5194 - val_accuracy: 0.7482 - val_loss: 0.5262 - learning_rate: 0.0010
+Epoch 12/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 274ms/step - accuracy: 0.7264 - loss: 0.5267
+Epoch 12: val_loss improved from 0.49987 to 0.41496, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 376ms/step - accuracy: 0.7268 - loss: 0.5261 - val_accuracy: 0.8076 - val_loss: 0.4150 - learning_rate: 0.0010
+Epoch 13/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 281ms/step - accuracy: 0.7860 - loss: 0.4344
+Epoch 13: val_loss improved from 0.41496 to 0.41054, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 382ms/step - accuracy: 0.7859 - loss: 0.4350 - val_accuracy: 0.8504 - val_loss: 0.4105 - learning_rate: 0.0010
+Epoch 14/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 278ms/step - accuracy: 0.8045 - loss: 0.4358
+Epoch 14: val_loss improved from 0.41054 to 0.37523, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 384ms/step - accuracy: 0.8043 - loss: 0.4360 - val_accuracy: 0.8504 - val_loss: 0.3752 - learning_rate: 0.0010
+Epoch 15/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 279ms/step - accuracy: 0.7608 - loss: 0.4729
+Epoch 15: val_loss did not improve from 0.37523
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 379ms/step - accuracy: 0.7610 - loss: 0.4727 - val_accuracy: 0.8290 - val_loss: 0.3807 - learning_rate: 0.0010
+Epoch 16/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 287ms/step - accuracy: 0.8305 - loss: 0.3759
+Epoch 16: val_loss did not improve from 0.37523
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 384ms/step - accuracy: 0.8301 - loss: 0.3765 - val_accuracy: 0.8219 - val_loss: 0.3899 - learning_rate: 0.0010
+Epoch 17/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 282ms/step - accuracy: 0.8269 - loss: 0.4049
+Epoch 17: val_loss improved from 0.37523 to 0.36590, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 389ms/step - accuracy: 0.8269 - loss: 0.4047 - val_accuracy: 0.8147 - val_loss: 0.3659 - learning_rate: 0.0010
+Epoch 18/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 279ms/step - accuracy: 0.8619 - loss: 0.3557
+Epoch 18: val_loss improved from 0.36590 to 0.25325, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 391ms/step - accuracy: 0.8618 - loss: 0.3554 - val_accuracy: 0.9074 - val_loss: 0.2533 - learning_rate: 0.0010
+Epoch 19/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 283ms/step - accuracy: 0.8480 - loss: 0.3566
+Epoch 19: val_loss improved from 0.25325 to 0.24514, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 382ms/step - accuracy: 0.8483 - loss: 0.3561 - val_accuracy: 0.9169 - val_loss: 0.2451 - learning_rate: 0.0010
+Epoch 20/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 281ms/step - accuracy: 0.8634 - loss: 0.3191
+Epoch 20: val_loss did not improve from 0.24514
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 381ms/step - accuracy: 0.8633 - loss: 0.3192 - val_accuracy: 0.8931 - val_loss: 0.2572 - learning_rate: 0.0010
+Epoch 21/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 284ms/step - accuracy: 0.8639 - loss: 0.3153
+Epoch 21: val_loss improved from 0.24514 to 0.23122, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 381ms/step - accuracy: 0.8642 - loss: 0.3146 - val_accuracy: 0.8979 - val_loss: 0.2312 - learning_rate: 0.0010
+Epoch 22/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 279ms/step - accuracy: 0.8978 - loss: 0.2661
+Epoch 22: val_loss improved from 0.23122 to 0.21106, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 381ms/step - accuracy: 0.8976 - loss: 0.2661 - val_accuracy: 0.9169 - val_loss: 0.2111 - learning_rate: 0.0010
+Epoch 23/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 286ms/step - accuracy: 0.8886 - loss: 0.2580
+Epoch 23: val_loss improved from 0.21106 to 0.18560, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 383ms/step - accuracy: 0.8885 - loss: 0.2588 - val_accuracy: 0.9501 - val_loss: 0.1856 - learning_rate: 0.0010
+Epoch 24/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 287ms/step - accuracy: 0.8908 - loss: 0.2883
+Epoch 24: val_loss did not improve from 0.18560
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 388ms/step - accuracy: 0.8906 - loss: 0.2886 - val_accuracy: 0.9311 - val_loss: 0.1969 - learning_rate: 0.0010
+Epoch 25/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 278ms/step - accuracy: 0.8999 - loss: 0.2519
+Epoch 25: val_loss did not improve from 0.18560
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 382ms/step - accuracy: 0.9000 - loss: 0.2518 - val_accuracy: 0.9192 - val_loss: 0.1866 - learning_rate: 0.0010
+Epoch 26/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 284ms/step - accuracy: 0.9148 - loss: 0.2068
+Epoch 26: val_loss improved from 0.18560 to 0.16913, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 382ms/step - accuracy: 0.9145 - loss: 0.2076 - val_accuracy: 0.9287 - val_loss: 0.1691 - learning_rate: 0.0010
+Epoch 27/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 281ms/step - accuracy: 0.9070 - loss: 0.2473
+Epoch 27: val_loss did not improve from 0.16913
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 384ms/step - accuracy: 0.9070 - loss: 0.2473 - val_accuracy: 0.9287 - val_loss: 0.1911 - learning_rate: 0.0010
+Epoch 28/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 275ms/step - accuracy: 0.9075 - loss: 0.2470
+Epoch 28: val_loss improved from 0.16913 to 0.14171, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 377ms/step - accuracy: 0.9078 - loss: 0.2460 - val_accuracy: 0.9406 - val_loss: 0.1417 - learning_rate: 0.0010
+Epoch 29/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 286ms/step - accuracy: 0.8999 - loss: 0.2565
+Epoch 29: val_loss did not improve from 0.14171
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 379ms/step - accuracy: 0.9004 - loss: 0.2551 - val_accuracy: 0.9240 - val_loss: 0.1534 - learning_rate: 0.0010
+Epoch 30/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 276ms/step - accuracy: 0.9236 - loss: 0.1807
+Epoch 30: val_loss did not improve from 0.14171
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 380ms/step - accuracy: 0.9235 - loss: 0.1810 - val_accuracy: 0.9549 - val_loss: 0.1480 - learning_rate: 0.0010
+Epoch 31/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 288ms/step - accuracy: 0.9033 - loss: 0.2130
+Epoch 31: val_loss improved from 0.14171 to 0.11701, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 386ms/step - accuracy: 0.9039 - loss: 0.2126 - val_accuracy: 0.9620 - val_loss: 0.1170 - learning_rate: 0.0010
+Epoch 32/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 289ms/step - accuracy: 0.9255 - loss: 0.2014
+Epoch 32: val_loss improved from 0.11701 to 0.11673, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 392ms/step - accuracy: 0.9253 - loss: 0.2011 - val_accuracy: 0.9620 - val_loss: 0.1167 - learning_rate: 0.0010
+Epoch 33/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 287ms/step - accuracy: 0.9323 - loss: 0.1881
+Epoch 33: val_loss did not improve from 0.11673
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 382ms/step - accuracy: 0.9323 - loss: 0.1881 - val_accuracy: 0.9406 - val_loss: 0.1644 - learning_rate: 0.0010
+Epoch 34/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 286ms/step - accuracy: 0.9199 - loss: 0.1771
+Epoch 34: val_loss improved from 0.11673 to 0.08914, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 384ms/step - accuracy: 0.9203 - loss: 0.1764 - val_accuracy: 0.9691 - val_loss: 0.0891 - learning_rate: 0.0010
+Epoch 35/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 277ms/step - accuracy: 0.9395 - loss: 0.1640
+Epoch 35: val_loss did not improve from 0.08914
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 378ms/step - accuracy: 0.9394 - loss: 0.1639 - val_accuracy: 0.9501 - val_loss: 0.1231 - learning_rate: 0.0010
+Epoch 36/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 282ms/step - accuracy: 0.9363 - loss: 0.1439
+Epoch 36: val_loss did not improve from 0.08914
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 378ms/step - accuracy: 0.9362 - loss: 0.1448 - val_accuracy: 0.9525 - val_loss: 0.1137 - learning_rate: 0.0010
+Epoch 37/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 283ms/step - accuracy: 0.9422 - loss: 0.1864
+Epoch 37: val_loss improved from 0.08914 to 0.08767, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 19s 382ms/step - accuracy: 0.9420 - loss: 0.1852 - val_accuracy: 0.9667 - val_loss: 0.0877 - learning_rate: 0.0010
+Epoch 38/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 275ms/step - accuracy: 0.9429 - loss: 0.1625
+Epoch 38: val_loss improved from 0.08767 to 0.06311, saving model to seq_MRI_best_model.keras
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 378ms/step - accuracy: 0.9431 - loss: 0.1621 - val_accuracy: 0.9834 - val_loss: 0.0631 - learning_rate: 0.0010
+Epoch 39/40
+42/43 ━━━━━━━━━━━━━━━━━━━━ 0s 282ms/step - accuracy: 0.9398 - loss: 0.1676
+Epoch 39: val_loss did not improve from 0.06311
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 377ms/step - accuracy: 0.9399 - loss: 0.1665 - val_accuracy: 0.9549 - val_loss: 0.0926 - learning_rate: 0.0010
+Epoch 40/40
+43/43 ━━━━━━━━━━━━━━━━━━━━ 0s 274ms/step - accuracy: 0.9532 - loss: 0.1420
+Epoch 40: val_loss did not improve from 0.06311
+43/43 ━━━━━━━━━━━━━━━━━━━━ 18s 378ms/step - accuracy: 0.9532 - loss: 0.1417 - val_accuracy: 0.9620 - val_loss: 0.0858 - learning_rate: 0.0010
+Restoring model weights from the end of the best epoch: 38.
+# # Assuming you have test_generator already set up
+# test_loss, test_accuracy = seq_mri_model.evaluate(test_generator)
+# print(f"Test Accuracy on MRI dataset (sequential): {test_accuracy:.4f}")
+# Evaluate the model
+test_loss, test_accuracy = seq_mri_model.evaluate(test_generator)
+print(f"Test Accuracy on MRI dataset (sequential): {test_accuracy:.4f}")
+
+# Save the model
+seq_mri_model.save("MRI_breast_cancer_model.h5")
+13/13 ━━━━━━━━━━━━━━━━━━━━ 6s 464ms/step - accuracy: 0.9848 - loss: 0.0502
+Test Accuracy on MRI dataset (sequential): 0.9711
+def summarize_history(history, model_name):
+    train_acc = history.history['accuracy'][-1]
+    val_acc = history.history['val_accuracy'][-1]
+    print(f"\n{model_name} - Training Accuracy: {train_acc:.4f}, Validation Accuracy: {val_acc:.4f}")
+    return train_acc, val_acc
+from sklearn.metrics import classification_report
+import numpy as np
+
+def evaluate_on_test(model, model_name):
+    test_loss, test_acc = model.evaluate(test_generator, verbose=0)
+    print(f"{model_name} - Test Accuracy: {test_acc:.4f}")
+
+    y_true = test_generator.classes
+    y_pred = np.argmax(model.predict(test_generator), axis=1)
+
+    print(f"\nClassification Report for {model_name}:\n")
+    print(classification_report(y_true, y_pred, target_names=test_generator.class_indices.keys()))
+    return test_acc
+import matplotlib.pyplot as plt
+
+def plot_history(history, model_name):
+    plt.figure(figsize=(12, 4))
+
+    # Accuracy
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Train Accuracy')
+    plt.plot(history.history['val_accuracy'], label='Val Accuracy')
+    plt.title(f'{model_name} Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid()
+
+    # Loss
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Train Loss')
+    plt.plot(history.history['val_loss'], label='Val Loss')
+    plt.title(f'{model_name} Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid()
+
+    plt.tight_layout()
+    plt.show()
+model_accuracies = {}
+
+
+s_train, s_val = summarize_history(seq_mri_history, "Sequential_MRI")
+s_test = evaluate_on_test(seq_mri_model, "Sequential_MRI")
+plot_history(seq_mri_history, "Sequential_MRI")
+model_accuracies["Sequential_MRI"] = s_test
+Sequential_MRI - Training Accuracy: 0.9547, Validation Accuracy: 0.9620
+Sequential_MRI - Test Accuracy: 0.9687
+13/13 ━━━━━━━━━━━━━━━━━━━━ 4s 313ms/step
+
+Classification Report for Sequential_MRI:
+
+              precision    recall  f1-score   support
+
+      Benign       0.99      0.97      0.98       212
+   Malignant       0.97      0.99      0.98       203
+
+    accuracy                           0.98       415
+   macro avg       0.98      0.98      0.98       415
+weighted avg       0.98      0.98      0.98       415
+
+
+ 3.Histopathology code 
+import numpy as np
+import pandas as pd
+import os
+import cv2
+import random
+import matplotlib.pyplot as plt
+import seaborn as sns
+import tensorflow as tf
+from tensorflow.keras import layers, models
+from sklearn.model_selection import train_test_split
+from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
+
+from tensorflow.keras import mixed_precision
+mixed_precision.set_global_policy('mixed_float16')
+DATASET_PATH = '/kaggle/input/breakhis/BreaKHis_v1/BreaKHis_v1/histology_slides/breast'
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
+LEARNING_RATE = 1e-4
+def extract_label(filename):
+    if '_B_' in filename:
+        return 0
+    elif '_M_' in filename:
+        return 1
+    return -1
+def load_data(dataset_path):
+    image_paths = []
+    labels = []
+    for root, _, files in os.walk(dataset_path):
+        for file in files:
+            if file.endswith(('.png', '.jpg', '.jpeg')):
+                label = extract_label(file)
+                if label != -1:
+                    image_paths.append(os.path.join(root, file))
+                    labels.append(label)
+    return np.array(image_paths), np.array(labels)
+
+image_paths, labels = load_data(DATASET_PATH)
+train_val_paths, test_paths, train_val_labels, test_labels = train_test_split(
+    image_paths, labels, test_size=0.1, random_state=42, stratify=labels
+)
+
+train_paths, val_paths, train_labels, val_labels = train_test_split(
+    train_val_paths, train_val_labels, test_size=0.2, random_state=42, stratify=train_val_labels
+)
+
+print(f"Training size: {len(train_paths)}")
+print(f"Validation size: {len(val_paths)}")
+print(f"Test size: {len(test_paths)}")
+Training size: 5694
+Validation size: 1424
+Test size: 791
+# === One-hot Encode Labels ===
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+train_labels_cat = to_categorical(train_labels, num_classes=2)
+val_labels_cat = to_categorical(val_labels, num_classes=2)
+test_labels_cat = to_categorical(test_labels, num_classes=2)
+# === Preprocessing Function ===
+def load_and_preprocess_image(path, label):
+    img = tf.io.read_file(path)
+    img = tf.image.decode_jpeg(img, channels=3)
+    img = tf.image.resize(img, IMG_SIZE)
+    img = img / 255.0
+    img = tf.image.random_flip_left_right(img)
+    img = tf.image.random_flip_up_down(img)
+    img = tf.image.random_brightness(img, max_delta=0.1)
+    img = tf.image.random_contrast(img, lower=0.8, upper=1.2)
+    return img, label
+# === TF Datasets ===
+train_dataset = (
+    tf.data.Dataset.from_tensor_slices((train_paths, train_labels_cat))
+    .shuffle(len(train_paths))
+    .map(load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
+    .batch(BATCH_SIZE)
+    .prefetch(tf.data.AUTOTUNE)
+)
+
+val_dataset = (
+    tf.data.Dataset.from_tensor_slices((val_paths, val_labels_cat))
+    .map(load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
+    .batch(BATCH_SIZE)
+    .prefetch(tf.data.AUTOTUNE)
+)
+
+test_dataset = (
+    tf.data.Dataset.from_tensor_slices((test_paths, test_labels_cat))
+    .map(load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
+    .batch(BATCH_SIZE)
+    .prefetch(tf.data.AUTOTUNE)
+)
+# === Visualize Samples ===
+plt.figure(figsize=(12, 6))
+for images, labels in train_dataset.take(1):
+    images = tf.clip_by_value(images, 0.0, 1.0)
+    for i in range(8):
+        ax = plt.subplot(2, 4, i + 1)
+        plt.imshow(images[i].numpy())
+        plt.title('Malignant' if tf.argmax(labels[i]) == 1 else 'Benign')
+        plt.axis("off")
+plt.show()
+
+# === Label Distribution ===
+labels_array = np.argmax(np.concatenate([y.numpy() for _, y in train_dataset.take(10)]), axis=1)
+sns.countplot(x=labels_array)
+plt.title('Class Distribution')
+plt.show()
+
+
+# === Model Definition ===
+def create_model():
+    model = models.Sequential([
+        layers.Input(shape=(IMG_SIZE[0], IMG_SIZE[1], 3)),
+        layers.Conv2D(32, (3, 3), activation='relu'),
+        layers.MaxPooling2D((2, 2)),
+        layers.Conv2D(64, (3, 3), activation='relu'),
+        layers.MaxPooling2D((2, 2)),
+        layers.Conv2D(128, (3, 3), activation='relu'),
+        layers.MaxPooling2D((2, 2)),
+        layers.Flatten(),
+        layers.Dense(256, activation='relu'),
+        layers.Dropout(0.5),
+        layers.Dense(2, activation='softmax')  # Softmax for 2-class one-hot
+    ])
+    return model
+
+model = create_model()
+model.summary()
+Model: "sequential_3"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ conv2d_9 (Conv2D)                    │ (None, 222, 222, 32)        │             896 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_9 (MaxPooling2D)       │ (None, 111, 111, 32)        │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_10 (Conv2D)                   │ (None, 109, 109, 64)        │          18,496 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_10 (MaxPooling2D)      │ (None, 54, 54, 64)          │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_11 (Conv2D)                   │ (None, 52, 52, 128)         │          73,856 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_11 (MaxPooling2D)      │ (None, 26, 26, 128)         │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ flatten_3 (Flatten)                  │ (None, 86528)               │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_6 (Dense)                      │ (None, 256)                 │      22,151,424 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_3 (Dropout)                  │ (None, 256)                 │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_7 (Dense)                      │ (None, 2)                   │             514 │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 22,245,186 (84.86 MB)
+ Trainable params: 22,245,186 (84.86 MB)
+ Non-trainable params: 0 (0.00 B)
+# === Optimizer, Loss, Metrics ===
+optimizer = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE))
+
+model.compile(
+    optimizer=optimizer,
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+# === Class Weights ===
+class_weights = compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(train_labels),
+    y=train_labels
+)
+class_weight_dict = {i: float(class_weights[i]) for i in range(len(class_weights))}
+print(f"Class weights: {class_weight_dict}")
+Class weights: {0: 1.5949579831932774, 1: 0.72831926323868}
+from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
+# === Callbacks ===
+def train_model(model, model_name):
+    checkpoint = ModelCheckpoint(f"{model_name}_best_model.keras", monitor='val_loss', save_best_only=True, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, verbose=1)
+    early_stop = EarlyStopping(monitor='val_loss', patience=7, restore_best_weights=True, verbose=1)
+    
+    return [checkpoint, reduce_lr, early_stop]
+# === Train Model ===
+history = model.fit(
+    train_dataset,
+    validation_data=val_dataset,
+    epochs=40,
+    class_weight=class_weight_dict,
+    callbacks=train_model(model, "histopathology_softmax")
+)
+Epoch 1/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 126ms/step - accuracy: 0.6634 - loss: 0.6547
+Epoch 1: val_loss improved from inf to 0.52538, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 36s 171ms/step - accuracy: 0.6638 - loss: 0.6542 - val_accuracy: 0.7823 - val_loss: 0.5254 - learning_rate: 1.0000e-04
+Epoch 2/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8060 - loss: 0.5067
+Epoch 2: val_loss improved from 0.52538 to 0.45748, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 36s 159ms/step - accuracy: 0.8061 - loss: 0.5066 - val_accuracy: 0.8413 - val_loss: 0.4575 - learning_rate: 1.0000e-04
+Epoch 3/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8364 - loss: 0.4713
+Epoch 3: val_loss did not improve from 0.45748
+178/178 ━━━━━━━━━━━━━━━━━━━━ 26s 144ms/step - accuracy: 0.8364 - loss: 0.4713 - val_accuracy: 0.8174 - val_loss: 0.4901 - learning_rate: 1.0000e-04
+Epoch 4/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 113ms/step - accuracy: 0.8232 - loss: 0.4764
+Epoch 4: val_loss improved from 0.45748 to 0.40877, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 156ms/step - accuracy: 0.8232 - loss: 0.4763 - val_accuracy: 0.8497 - val_loss: 0.4088 - learning_rate: 1.0000e-04
+Epoch 5/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8403 - loss: 0.4484
+Epoch 5: val_loss improved from 0.40877 to 0.39496, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 156ms/step - accuracy: 0.8402 - loss: 0.4483 - val_accuracy: 0.8511 - val_loss: 0.3950 - learning_rate: 1.0000e-04
+Epoch 6/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8328 - loss: 0.4457
+Epoch 6: val_loss did not improve from 0.39496
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 143ms/step - accuracy: 0.8328 - loss: 0.4457 - val_accuracy: 0.8378 - val_loss: 0.4320 - learning_rate: 1.0000e-04
+Epoch 7/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 114ms/step - accuracy: 0.8343 - loss: 0.4345
+Epoch 7: val_loss did not improve from 0.39496
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8344 - loss: 0.4345 - val_accuracy: 0.8490 - val_loss: 0.4180 - learning_rate: 1.0000e-04
+Epoch 8/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8439 - loss: 0.4216
+Epoch 8: val_loss improved from 0.39496 to 0.38428, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 156ms/step - accuracy: 0.8439 - loss: 0.4216 - val_accuracy: 0.8680 - val_loss: 0.3843 - learning_rate: 1.0000e-04
+Epoch 9/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 114ms/step - accuracy: 0.8562 - loss: 0.4040
+Epoch 9: val_loss did not improve from 0.38428
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8562 - loss: 0.4041 - val_accuracy: 0.8483 - val_loss: 0.4078 - learning_rate: 1.0000e-04
+Epoch 10/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 112ms/step - accuracy: 0.8508 - loss: 0.4099
+Epoch 10: val_loss improved from 0.38428 to 0.35532, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 27s 154ms/step - accuracy: 0.8508 - loss: 0.4098 - val_accuracy: 0.8617 - val_loss: 0.3553 - learning_rate: 1.0000e-04
+Epoch 11/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 112ms/step - accuracy: 0.8586 - loss: 0.3864
+Epoch 11: val_loss did not improve from 0.35532
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 140ms/step - accuracy: 0.8586 - loss: 0.3864 - val_accuracy: 0.8596 - val_loss: 0.3831 - learning_rate: 1.0000e-04
+Epoch 12/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8488 - loss: 0.4085
+Epoch 12: val_loss improved from 0.35532 to 0.32037, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 157ms/step - accuracy: 0.8488 - loss: 0.4084 - val_accuracy: 0.8708 - val_loss: 0.3204 - learning_rate: 1.0000e-04
+Epoch 13/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8489 - loss: 0.4045
+Epoch 13: val_loss did not improve from 0.32037
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8490 - loss: 0.4043 - val_accuracy: 0.8736 - val_loss: 0.3661 - learning_rate: 1.0000e-04
+Epoch 14/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 117ms/step - accuracy: 0.8615 - loss: 0.3753
+Epoch 14: val_loss did not improve from 0.32037
+178/178 ━━━━━━━━━━━━━━━━━━━━ 26s 145ms/step - accuracy: 0.8615 - loss: 0.3753 - val_accuracy: 0.8722 - val_loss: 0.3257 - learning_rate: 1.0000e-04
+Epoch 15/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 112ms/step - accuracy: 0.8714 - loss: 0.3606
+Epoch 15: val_loss did not improve from 0.32037
+
+Epoch 15: ReduceLROnPlateau reducing learning rate to 1.9999999494757503e-05.
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8713 - loss: 0.3607 - val_accuracy: 0.8167 - val_loss: 0.4274 - learning_rate: 1.0000e-04
+Epoch 16/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 113ms/step - accuracy: 0.8443 - loss: 0.3624
+Epoch 16: val_loss improved from 0.32037 to 0.30547, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 27s 154ms/step - accuracy: 0.8444 - loss: 0.3623 - val_accuracy: 0.8834 - val_loss: 0.3055 - learning_rate: 2.0000e-05
+Epoch 17/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8729 - loss: 0.3395
+Epoch 17: val_loss did not improve from 0.30547
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 143ms/step - accuracy: 0.8729 - loss: 0.3395 - val_accuracy: 0.8904 - val_loss: 0.3091 - learning_rate: 2.0000e-05
+Epoch 18/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8650 - loss: 0.3530
+Epoch 18: val_loss did not improve from 0.30547
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8651 - loss: 0.3529 - val_accuracy: 0.8869 - val_loss: 0.3079 - learning_rate: 2.0000e-05
+Epoch 19/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8770 - loss: 0.3140
+Epoch 19: val_loss did not improve from 0.30547
+
+Epoch 19: ReduceLROnPlateau reducing learning rate to 3.999999898951501e-06.
+178/178 ━━━━━━━━━━━━━━━━━━━━ 26s 144ms/step - accuracy: 0.8770 - loss: 0.3140 - val_accuracy: 0.8827 - val_loss: 0.3280 - learning_rate: 2.0000e-05
+Epoch 20/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 112ms/step - accuracy: 0.8692 - loss: 0.3349
+Epoch 20: val_loss improved from 0.30547 to 0.30509, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 156ms/step - accuracy: 0.8692 - loss: 0.3349 - val_accuracy: 0.8919 - val_loss: 0.3051 - learning_rate: 4.0000e-06
+Epoch 21/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 114ms/step - accuracy: 0.8774 - loss: 0.3201
+Epoch 21: val_loss did not improve from 0.30509
+178/178 ━━━━━━━━━━━━━━━━━━━━ 26s 143ms/step - accuracy: 0.8774 - loss: 0.3201 - val_accuracy: 0.8989 - val_loss: 0.3051 - learning_rate: 4.0000e-06
+Epoch 22/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8880 - loss: 0.3034
+Epoch 22: val_loss improved from 0.30509 to 0.29832, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 159ms/step - accuracy: 0.8879 - loss: 0.3034 - val_accuracy: 0.8876 - val_loss: 0.2983 - learning_rate: 4.0000e-06
+Epoch 23/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8818 - loss: 0.3063
+Epoch 23: val_loss did not improve from 0.29832
+178/178 ━━━━━━━━━━━━━━━━━━━━ 26s 144ms/step - accuracy: 0.8818 - loss: 0.3064 - val_accuracy: 0.8869 - val_loss: 0.3051 - learning_rate: 4.0000e-06
+Epoch 24/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8799 - loss: 0.3053
+Epoch 24: val_loss did not improve from 0.29832
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8799 - loss: 0.3054 - val_accuracy: 0.8912 - val_loss: 0.2993 - learning_rate: 4.0000e-06
+Epoch 25/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 112ms/step - accuracy: 0.8676 - loss: 0.3332
+Epoch 25: val_loss did not improve from 0.29832
+
+Epoch 25: ReduceLROnPlateau reducing learning rate to 7.999999979801942e-07.
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8677 - loss: 0.3331 - val_accuracy: 0.8848 - val_loss: 0.3045 - learning_rate: 4.0000e-06
+Epoch 26/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 131ms/step - accuracy: 0.8847 - loss: 0.2982
+Epoch 26: val_loss did not improve from 0.29832
+178/178 ━━━━━━━━━━━━━━━━━━━━ 29s 163ms/step - accuracy: 0.8847 - loss: 0.2983 - val_accuracy: 0.8897 - val_loss: 0.2996 - learning_rate: 8.0000e-07
+Epoch 27/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 112ms/step - accuracy: 0.8794 - loss: 0.3137
+Epoch 27: val_loss improved from 0.29832 to 0.29463, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 27s 153ms/step - accuracy: 0.8794 - loss: 0.3137 - val_accuracy: 0.8933 - val_loss: 0.2946 - learning_rate: 8.0000e-07
+Epoch 28/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 123ms/step - accuracy: 0.8789 - loss: 0.3189
+Epoch 28: val_loss did not improve from 0.29463
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 157ms/step - accuracy: 0.8789 - loss: 0.3189 - val_accuracy: 0.8933 - val_loss: 0.2979 - learning_rate: 8.0000e-07
+Epoch 29/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 132ms/step - accuracy: 0.8718 - loss: 0.3222
+Epoch 29: val_loss did not improve from 0.29463
+178/178 ━━━━━━━━━━━━━━━━━━━━ 29s 162ms/step - accuracy: 0.8719 - loss: 0.3222 - val_accuracy: 0.8841 - val_loss: 0.3007 - learning_rate: 8.0000e-07
+Epoch 30/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8783 - loss: 0.3143
+Epoch 30: val_loss did not improve from 0.29463
+
+Epoch 30: ReduceLROnPlateau reducing learning rate to 1.600000018697756e-07.
+178/178 ━━━━━━━━━━━━━━━━━━━━ 26s 145ms/step - accuracy: 0.8783 - loss: 0.3143 - val_accuracy: 0.8890 - val_loss: 0.2962 - learning_rate: 8.0000e-07
+Epoch 31/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8854 - loss: 0.3165
+Epoch 31: val_loss did not improve from 0.29463
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 143ms/step - accuracy: 0.8854 - loss: 0.3165 - val_accuracy: 0.8883 - val_loss: 0.2975 - learning_rate: 1.6000e-07
+Epoch 32/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 112ms/step - accuracy: 0.8782 - loss: 0.3226
+Epoch 32: val_loss improved from 0.29463 to 0.29346, saving model to histopathology_softmax_best_model.keras
+178/178 ━━━━━━━━━━━━━━━━━━━━ 28s 155ms/step - accuracy: 0.8782 - loss: 0.3225 - val_accuracy: 0.8954 - val_loss: 0.2935 - learning_rate: 1.6000e-07
+Epoch 33/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 113ms/step - accuracy: 0.8768 - loss: 0.3217
+Epoch 33: val_loss did not improve from 0.29346
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 140ms/step - accuracy: 0.8768 - loss: 0.3217 - val_accuracy: 0.8862 - val_loss: 0.3003 - learning_rate: 1.6000e-07
+Epoch 34/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8823 - loss: 0.3207
+Epoch 34: val_loss did not improve from 0.29346
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8823 - loss: 0.3207 - val_accuracy: 0.8862 - val_loss: 0.2949 - learning_rate: 1.6000e-07
+Epoch 35/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 116ms/step - accuracy: 0.8769 - loss: 0.3190
+Epoch 35: val_loss did not improve from 0.29346
+
+Epoch 35: ReduceLROnPlateau reducing learning rate to 3.199999980552093e-08.
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 143ms/step - accuracy: 0.8769 - loss: 0.3189 - val_accuracy: 0.8904 - val_loss: 0.2976 - learning_rate: 1.6000e-07
+Epoch 36/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 115ms/step - accuracy: 0.8788 - loss: 0.3121
+Epoch 36: val_loss did not improve from 0.29346
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 143ms/step - accuracy: 0.8788 - loss: 0.3122 - val_accuracy: 0.8883 - val_loss: 0.3036 - learning_rate: 3.2000e-08
+Epoch 37/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 113ms/step - accuracy: 0.8788 - loss: 0.3063
+Epoch 37: val_loss did not improve from 0.29346
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 141ms/step - accuracy: 0.8788 - loss: 0.3064 - val_accuracy: 0.8954 - val_loss: 0.2978 - learning_rate: 3.2000e-08
+Epoch 38/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 113ms/step - accuracy: 0.8807 - loss: 0.3087
+Epoch 38: val_loss did not improve from 0.29346
+
+Epoch 38: ReduceLROnPlateau reducing learning rate to 6.399999818995639e-09.
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8807 - loss: 0.3087 - val_accuracy: 0.8919 - val_loss: 0.2973 - learning_rate: 3.2000e-08
+Epoch 39/40
+178/178 ━━━━━━━━━━━━━━━━━━━━ 0s 114ms/step - accuracy: 0.8784 - loss: 0.3110
+Epoch 39: val_loss did not improve from 0.29346
+178/178 ━━━━━━━━━━━━━━━━━━━━ 25s 142ms/step - accuracy: 0.8784 - loss: 0.3110 - val_accuracy: 0.8820 - val_loss: 0.3018 - learning_rate: 6.4000e-09
+Epoch 39: early stopping
+Restoring model weights from the end of the best epoch: 32.
+# === Evaluate on Test Set ===
+test_loss, test_acc = model.evaluate(test_dataset)
+print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
+25/25 ━━━━━━━━━━━━━━━━━━━━ 7s 275ms/step - accuracy: 0.8890 - loss: 0.3235
+
+Test Accuracy: 86.98%
+# === Classification Report ===
+y_true = np.argmax(test_labels_cat, axis=1)
+y_pred = []
+
+for images, _ in test_dataset:
+    preds = model.predict(images)
+    y_pred.extend(np.argmax(preds, axis=1))
+
+print("\nClassification Report:")
+print(classification_report(y_true, y_pred, target_names=["Benign", "Malignant"]))
+
+# === Confusion Matrix ===
+cm = confusion_matrix(y_true, y_pred)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=["Benign", "Malignant"], yticklabels=["Benign", "Malignant"])
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.show()
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 478ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 45ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 53ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 59ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 43ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 43ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 46ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 49ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 52ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 46ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 51ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 48ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 53ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 39ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 33ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 32ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 40ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 38ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 53ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 55ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 32ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 52ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 44ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 58ms/step
+1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 354ms/step
+
+Classification Report:
+              precision    recall  f1-score   support
+
+      Benign       0.77      0.83      0.80       248
+   Malignant       0.92      0.89      0.90       543
+
+    accuracy                           0.87       791
+   macro avg       0.85      0.86      0.85       791
+weighted avg       0.87      0.87      0.87       791
+
+
+# === Accuracy & Loss Plots ===
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Train Acc')
+plt.plot(history.history['val_accuracy'], label='Val Acc')
+plt.title('Accuracy Over Epochs')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.title('Loss Over Epochs')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# === Save Final Model in HDF5 Format (.h5) ===
+model.save("histopathology_breast_cancer_model.h5")
+print("Model saved as histopathology_breast_cancer_model.h5")
+Model saved as histopathology_breast_cancer_model.h5
+ 4.Mammography code 
+
+
+
+
+# Mammography Classification Pipeline (Modified)
+import os
+import numpy as np
+import pandas as pd
+import cv2
+import tensorflow as tf
+import random
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import EfficientNetV2B3
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, Input, Flatten, Conv2D, MaxPooling2D
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras import mixed_precision
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.utils.class_weight import compute_class_weight
+# Parameters
+dataset_path = '/kaggle/input/breastcancer-mammography/INbreast+MIAS+DDSM Dataset'
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
+EPOCHS = 40
+VALIDATION_SPLIT = 0.15
+TEST_SPLIT = 0.15
+SEED = 42
+# Data generators
+train_val_datagen = ImageDataGenerator(
+    rescale=1./255,
+    validation_split=VALIDATION_SPLIT + TEST_SPLIT,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
+
+test_datagen = ImageDataGenerator(rescale=1./255)
+# Dataset partitions
+train_generator = train_val_datagen.flow_from_directory(
+    dataset_path,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='training',
+    shuffle=True,
+    seed=SEED
+)
+
+val_generator = train_val_datagen.flow_from_directory(
+    dataset_path,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='validation',
+    shuffle=True,
+    seed=SEED
+)
+
+# Manually create a separate test generator using a fixed seed and shuffle=False
+test_generator = test_datagen.flow_from_directory(
+    dataset_path,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=False  # Needed for correct evaluation
+)
+Found 17204 images belonging to 2 classes.
+Found 7372 images belonging to 2 classes.
+Found 24576 images belonging to 2 classes.
+# Class names
+class_names = list(train_generator.class_indices.keys())
+print(f"Classes: {class_names}")
+Classes: ['Benign Masses', 'Malignant Masses']
+# Visualize sample images
+images, labels = next(train_generator)
+plt.figure(figsize=(12, 6))
+for i in range(8):
+    ax = plt.subplot(2, 4, i + 1)
+    plt.imshow(images[i])
+    plt.title(class_names[np.argmax(labels[i])])
+    plt.axis("off")
+plt.tight_layout()
+plt.show()
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import (Input, Conv2D, MaxPooling2D, GlobalAveragePooling2D,
+                                     BatchNormalization, Dropout, Dense)
+from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
+from tensorflow.keras import mixed_precision
+
+# Enable mixed precision
+mixed_precision.set_global_policy("mixed_float16")
+
+def create_improved_model():
+    model = Sequential([
+        Input(shape=(224, 224, 3)),
+
+        Conv2D(32, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+
+        Conv2D(64, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+
+        Conv2D(128, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+
+        Conv2D(256, (3, 3), activation='relu', padding='same'),
+        BatchNormalization(),
+        MaxPooling2D(pool_size=(2, 2)),
+
+        GlobalAveragePooling2D(),
+
+        Dense(256, activation='relu'),
+        Dropout(0.5),
+        Dense(2, activation='softmax', dtype='float32')  # Keep float32 for softmax output
+    ])
+    return model
+
+model = create_improved_model()
+model.summary()
+
+# Optimizer
+LEARNING_RATE = 1e-4
+optimizer = mixed_precision.LossScaleOptimizer(tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE))
+
+# Compile model
+model.compile(
+    optimizer=optimizer,
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Model name
+model_name = "Improved_Mammography_breast_cancer_model"
+
+# Callbacks
+checkpoint = ModelCheckpoint(
+    filepath=f"{model_name}_best_model.keras",
+    monitor='val_loss',
+    save_best_only=True,
+    verbose=1
+)
+
+reduce_lr = ReduceLROnPlateau(
+    monitor='val_loss',
+    factor=0.2,
+    patience=3,
+    verbose=1
+)
+
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=7,
+    restore_best_weights=True,
+    verbose=1
+)
+
+# Train the model
+history = model.fit(
+    train_generator,
+    epochs=EPOCHS,
+    validation_data=val_generator,
+    class_weight=class_weight_dict,
+    callbacks=[checkpoint, reduce_lr, early_stop]
+)
+Model: "sequential_3"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ conv2d_10 (Conv2D)                   │ (None, 224, 224, 32)        │             896 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization                  │ (None, 224, 224, 32)        │             128 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_10 (MaxPooling2D)      │ (None, 112, 112, 32)        │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_11 (Conv2D)                   │ (None, 112, 112, 64)        │          18,496 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_1                │ (None, 112, 112, 64)        │             256 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_11 (MaxPooling2D)      │ (None, 56, 56, 64)          │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_12 (Conv2D)                   │ (None, 56, 56, 128)         │          73,856 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_2                │ (None, 56, 56, 128)         │             512 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_12 (MaxPooling2D)      │ (None, 28, 28, 128)         │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_13 (Conv2D)                   │ (None, 28, 28, 256)         │         295,168 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_3                │ (None, 28, 28, 256)         │           1,024 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_13 (MaxPooling2D)      │ (None, 14, 14, 256)         │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ global_average_pooling2d             │ (None, 256)                 │               0 │
+│ (GlobalAveragePooling2D)             │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_6 (Dense)                      │ (None, 256)                 │          65,792 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_3 (Dropout)                  │ (None, 256)                 │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_7 (Dense)                      │ (None, 2)                   │             514 │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 456,642 (1.74 MB)
+ Trainable params: 455,682 (1.74 MB)
+ Non-trainable params: 960 (3.75 KB)
+Epoch 1/40
+2025-04-10 15:54:09.785688: E external/local_xla/xla/service/slow_operation_alarm.cc:65] Trying algorithm eng19{k2=0} for conv (f16[64,3,3,32]{3,2,1,0}, u8[0]{0}) custom-call(f16[32,112,112,32]{3,2,1,0}, f16[32,112,112,64]{3,2,1,0}), window={size=3x3 pad=1_1x1_1}, dim_labels=b01f_o01i->b01f, custom_call_target="__cudnn$convBackwardFilter", backend_config={"cudnn_conv_backend_config":{"activation_mode":"kNone","conv_result_scale":1,"leakyrelu_alpha":0,"side_input_scale":0},"force_earliest_schedule":false,"operation_queue_id":"0","wait_on_operation_queues":[]} is taking a while...
+2025-04-10 15:54:09.944342: E external/local_xla/xla/service/slow_operation_alarm.cc:133] The operation took 1.158834386s
+Trying algorithm eng19{k2=0} for conv (f16[64,3,3,32]{3,2,1,0}, u8[0]{0}) custom-call(f16[32,112,112,32]{3,2,1,0}, f16[32,112,112,64]{3,2,1,0}), window={size=3x3 pad=1_1x1_1}, dim_labels=b01f_o01i->b01f, custom_call_target="__cudnn$convBackwardFilter", backend_config={"cudnn_conv_backend_config":{"activation_mode":"kNone","conv_result_scale":1,"leakyrelu_alpha":0,"side_input_scale":0},"force_earliest_schedule":false,"operation_queue_id":"0","wait_on_operation_queues":[]} is taking a while...
+280/538 ━━━━━━━━━━━━━━━━━━━━ 1:42 396ms/step - accuracy: 0.5615 - loss: 0.7278
+2025-04-10 15:56:15.336861: E external/local_xla/xla/service/slow_operation_alarm.cc:65] Trying algorithm eng19{k2=0} for conv (f16[64,3,3,32]{3,2,1,0}, u8[0]{0}) custom-call(f16[20,112,112,32]{3,2,1,0}, f16[20,112,112,64]{3,2,1,0}), window={size=3x3 pad=1_1x1_1}, dim_labels=b01f_o01i->b01f, custom_call_target="__cudnn$convBackwardFilter", backend_config={"cudnn_conv_backend_config":{"activation_mode":"kNone","conv_result_scale":1,"leakyrelu_alpha":0,"side_input_scale":0},"force_earliest_schedule":false,"operation_queue_id":"0","wait_on_operation_queues":[]} is taking a while...
+2025-04-10 15:56:15.782420: E external/local_xla/xla/service/slow_operation_alarm.cc:133] The operation took 1.445732836s
+Trying algorithm eng19{k2=0} for conv (f16[64,3,3,32]{3,2,1,0}, u8[0]{0}) custom-call(f16[20,112,112,32]{3,2,1,0}, f16[20,112,112,64]{3,2,1,0}), window={size=3x3 pad=1_1x1_1}, dim_labels=b01f_o01i->b01f, custom_call_target="__cudnn$convBackwardFilter", backend_config={"cudnn_conv_backend_config":{"activation_mode":"kNone","conv_result_scale":1,"leakyrelu_alpha":0,"side_input_scale":0},"force_earliest_schedule":false,"operation_queue_id":"0","wait_on_operation_queues":[]} is taking a while...
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 412ms/step - accuracy: 0.5932 - loss: 0.6880
+Epoch 1: val_loss improved from inf to 1.14056, saving model to Improved_Mammography_breast_cancer_model_best_model.keras
+538/538 ━━━━━━━━━━━━━━━━━━━━ 339s 588ms/step - accuracy: 0.5934 - loss: 0.6877 - val_accuracy: 0.6271 - val_loss: 1.1406 - learning_rate: 1.0000e-04
+Epoch 2/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 392ms/step - accuracy: 0.7598 - loss: 0.4844
+Epoch 2: val_loss improved from 1.14056 to 0.84497, saving model to Improved_Mammography_breast_cancer_model_best_model.keras
+538/538 ━━━━━━━━━━━━━━━━━━━━ 304s 560ms/step - accuracy: 0.7598 - loss: 0.4843 - val_accuracy: 0.6206 - val_loss: 0.8450 - learning_rate: 1.0000e-04
+Epoch 3/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 396ms/step - accuracy: 0.7986 - loss: 0.4161
+Epoch 3: val_loss did not improve from 0.84497
+538/538 ━━━━━━━━━━━━━━━━━━━━ 308s 567ms/step - accuracy: 0.7986 - loss: 0.4161 - val_accuracy: 0.6443 - val_loss: 0.8832 - learning_rate: 1.0000e-04
+Epoch 4/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 393ms/step - accuracy: 0.8104 - loss: 0.3915
+Epoch 4: val_loss did not improve from 0.84497
+538/538 ━━━━━━━━━━━━━━━━━━━━ 306s 563ms/step - accuracy: 0.8105 - loss: 0.3915 - val_accuracy: 0.6175 - val_loss: 0.8783 - learning_rate: 1.0000e-04
+Epoch 5/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 395ms/step - accuracy: 0.8268 - loss: 0.3668
+Epoch 5: val_loss did not improve from 0.84497
+
+Epoch 5: ReduceLROnPlateau reducing learning rate to 1.9999999494757503e-05.
+538/538 ━━━━━━━━━━━━━━━━━━━━ 306s 564ms/step - accuracy: 0.8268 - loss: 0.3668 - val_accuracy: 0.5695 - val_loss: 2.0527 - learning_rate: 1.0000e-04
+Epoch 6/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 390ms/step - accuracy: 0.8356 - loss: 0.3502
+Epoch 6: val_loss did not improve from 0.84497
+538/538 ━━━━━━━━━━━━━━━━━━━━ 301s 554ms/step - accuracy: 0.8357 - loss: 0.3501 - val_accuracy: 0.6310 - val_loss: 1.4618 - learning_rate: 2.0000e-05
+Epoch 7/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 390ms/step - accuracy: 0.8458 - loss: 0.3268
+Epoch 7: val_loss did not improve from 0.84497
+538/538 ━━━━━━━━━━━━━━━━━━━━ 299s 550ms/step - accuracy: 0.8458 - loss: 0.3268 - val_accuracy: 0.6369 - val_loss: 1.4149 - learning_rate: 2.0000e-05
+Epoch 8/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 378ms/step - accuracy: 0.8458 - loss: 0.3248
+Epoch 8: val_loss did not improve from 0.84497
+
+Epoch 8: ReduceLROnPlateau reducing learning rate to 3.999999898951501e-06.
+538/538 ━━━━━━━━━━━━━━━━━━━━ 291s 537ms/step - accuracy: 0.8458 - loss: 0.3248 - val_accuracy: 0.6255 - val_loss: 1.4668 - learning_rate: 2.0000e-05
+Epoch 9/40
+537/538 ━━━━━━━━━━━━━━━━━━━━ 0s 383ms/step - accuracy: 0.8534 - loss: 0.3067
+Epoch 9: val_loss did not improve from 0.84497
+538/538 ━━━━━━━━━━━━━━━━━━━━ 293s 540ms/step - accuracy: 0.8534 - loss: 0.3067 - val_accuracy: 0.6446 - val_loss: 1.4757 - learning_rate: 4.0000e-06
+Epoch 9: early stopping
+Restoring model weights from the end of the best epoch: 2.
+# Evaluate on test dataset
+test_generator.reset()
+test_loss, test_acc = model.evaluate(test_generator)
+print(f"Test Accuracy: {test_acc * 100:.2f}%")
+768/768 ━━━━━━━━━━━━━━━━━━━━ 69s 89ms/step - accuracy: 0.2946 - loss: 0.8390
+Test Accuracy: 60.42%
+model.save("Improved_Mammography_breast_cancer_model.h5")
+ 
